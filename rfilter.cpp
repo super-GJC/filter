@@ -133,6 +133,11 @@ void Rfilter::read_Page(BlockManager* block, int pid, vector<vector<int>> &tuple
 	int beginbyte = 0, beginbit = 0;
 	int length = 0;
     block->ReadBlock(sdata, pid, PAGESIZE);
+    //flag:标识是否遇到0 0，遇到0 0可能有两种情况：
+    //1.遇到了所有维度的值都是最小值的元组
+    //2.遇到了空元组empty_tuple
+    //当第一次遇到0 0时，将flag修改为true；判断下一个元组若不是0 0，则将flag改为false，若下一个元组也为0 0，认为该page的元组读取完毕，退出循环
+    bool flag = false;
     for (k = 0; k < page_capacity; k++) { //每个线性化值写到arr中，再存入struct
 		vector<int> arr(M);
 		beginbyte = k * dbit_sum / BYTE;
@@ -154,7 +159,15 @@ void Rfilter::read_Page(BlockManager* block, int pid, vector<vector<int>> &tuple
 				beginbit += length;
 			}
 		}
-		if(compare_Twotuples(arr, empty_tuple)==1) break;
+        //FIXME：对于不包含所有维度属性都为最小值的数据集，会为0 0 ... 0单元格添加一条虚幻的元组
+		if(compare_Twotuples(arr, empty_tuple)==1){
+            if(pid == 0){
+                if(flag == true) break;
+                else flag = true;
+            } else {
+                break;
+            }
+        }
 		tuples.push_back(arr);
 	}
     return;
