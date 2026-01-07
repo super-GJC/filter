@@ -1,0 +1,30 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-g",
+                "${workspaceFolder}/common.h",
+                "${workspaceFolder}/BlockManager.h",
+                "${workspaceFolder}/Timer.h",
+                "${workspaceFolder}/bfilter.h",
+                "${workspaceFolder}/rfilter.h",
+                "${workspaceFolder}/BlockManager.cpp",
+                "${workspaceFolder}/Timer.cpp",
+                "${workspaceFolder}/bfilter.cpp",
+                "${workspaceFolder}/rfilter.cpp",
+                "${workspaceFolder}/main.cpp",  // 编译当前文件
+                "-o",
+                "${workspaceFolder}/main",
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"]
+        }
+    ]
+}
