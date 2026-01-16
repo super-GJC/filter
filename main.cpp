@@ -6,7 +6,7 @@
 int subset_num;
 int n ;
 int N ;//data set size
-int M = 2 ;//dimension number  M 与 RFilter类的属性 m 有区别吗？ 
+int M = 3 ;//dimension number  M 与 RFilter类的属性 m 有区别吗？ 
 int B ;
 int bucket_num ;
 int independent = 1 ;//1:independent, 0:dependent 这是维度排序算法中是否独立的标记变量吗？
@@ -82,7 +82,7 @@ int main()
 
     Rfilter* rf = new Rfilter();
     rf->construct_Rangefilter(dataPath, binaryPath1, filterPath, offsetPath);
-    // rf->process_Queries(binaryPath1,queryPath,offsetPath,filterPath,resultPath1);
+    rf->process_Queries(binaryPath1,queryPath,offsetPath,filterPath,resultPath1);
 
 
     cout << "Ends!" << endl;

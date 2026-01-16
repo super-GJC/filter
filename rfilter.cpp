@@ -318,7 +318,7 @@ void Rfilter::compute_Rangeset(int chunkid, vector<vector<int>> alltuples, vecto
     rfbitmap = new char[bitmapbytes]; // rfbitmap为数据块chunkid对应的位图
     for(i = 0; i < bitmapbytes; i++) rfbitmap[i] = 0;
     ///calculate chunk coordinates
-    vector<int> coords(m);
+    vector<int> coords(m); //coords[i]:当前块在维度i上的是第(coords[i]+1)个块
     int cid = chunkid;
     for(j = m-1; j >= 0; j--){
         coords[j] = cid & (powpieces[j] - 1);
@@ -328,33 +328,31 @@ void Rfilter::compute_Rangeset(int chunkid, vector<vector<int>> alltuples, vecto
         ///compute the offsets of the tuple on each dim
         vector<int> tupoffset(m);
         int tupleid;
-        int rangenum = 1; // m个维度共同考虑，对于数据块c所有可能的多维范围查询的数量，即CRSc集合的大小
+        int rangenum = 1; //RSc(t)集合的大小，RSc(t) = RSc¹(t) * RSc²(t) * ... * RScᵐ(t)
         for(k = 0; k < m; k++) {
-            //alltuples[j][k]：第j条元组在维度k上的值；coords[k] * logical_size[k]：数据块chunkid在维度k上的起始值
-            //alltuples[j][k] - coords[k] * logical_size[k]：第j条元组在维度k上相对于数据块chunkid起始值的偏移量
+            //alltuples[j][k] - coords[k] * logical_size[k]：第j条元组在维度k上的偏移量，即把第j条元组维度k的取值放到一维范围的PPT图(绿色圆形、红色菱形...)中
             tupoffset[k] = alltuples[j][k] - coords[k] * logical_size[k]; 
-            //oneDrange[k][tupoffset[k]]：维度k上，取值(偏移量)为tupoffset[k]的值对应的一维范围集合
-            // TODO:oneDrange[k][tupoffset[k]]这个列表中的取值怎么使用？oneDrange数组的第三维表示什么？
-            rangenum *= oneDrange[k][tupoffset[k]].size();
+            rangenum *= oneDrange[k][tupoffset[k]].size(); //oneDrange[k][tupoffset[k]]:对应RScᵏ(t)集合，其中元组t的第k维取值平移偏移量后值为tupoffset[k]
         }
-        vector<uint64_t> mranges(rangenum);
+        vector<uint64_t> mranges(rangenum); //对于一条元组alltuples[j]，能计算得到的RSc(t)
+        //length[i]:在下标为i的维度第一次选中一个区间(排序数)后，需要连续选中该排序数的次数为length[i]，对应分析11-1、11-2、11-3
         vector<uint64_t> lengths(m, 1);
         lengths[0] = 1;
         for(k = 1; k < m; k++) {
-            // GUESS:对应论文中no(r)公式中的连乘？
             lengths[k] = lengths[k-1] * oneDrange[k-1][tupoffset[k-1]].size();
         }
         ///compute the multi-dimensional ranges
         // mranges[g]：对应论文中no(r)的计算
         for(g = 0; g < rangenum; g++) {
-            // GUESS:oneDrange[0][tupoffset[0]][g % oneDrange[0][tupoffset[0]].size()] 对应论文中 no[li,ui]
             // GUESS:mranges[g]表达的含义：第g+1个多维范围的排序数为mranges[g]
+            //g % oneDrange[0][tupoffset[0]].size() 这个取余表示的是 mranges[g] 在第0维选择是列表中的第几个
             mranges[g] = oneDrange[0][tupoffset[0]][g % oneDrange[0][tupoffset[0]].size()];///////////// 第一维初始化
         }
         for(k = 1; k < m; k++) {
             for(g = 0; g < rangenum; g++){
                 // GUESS:之后的每一个维度乘完了累加？
-                mranges[g] = mranges[g] << oneDrange_bit[k];////////////// 
+                mranges[g] = mranges[g] << oneDrange_bit[k];//////////////
+                // GUESS：与347行同理，g / lengths[k] % oneDrange[k][tupoffset[k]].size() 这个取余表示的是 mranges[g] 在第k维选择是列表中的第几个
                 mranges[g] += oneDrange[k][tupoffset[k]][g / lengths[k] % oneDrange[k][tupoffset[k]].size()];//////////////
             }
         }
@@ -454,10 +452,12 @@ void Rfilter::read_Filters(const char* offsetpath, const char* filterpath){///re
     BlockManager* block = new BlockManager(filterpath, O_CREAT, PAGESIZE);
     for(i = 0; i < chunknum; i++){
         if(page_startid[i]==-1) continue;
-        int length = 0, offset = 0;
-        if(filter_offset[i][1] == filter_offset[i][3])
+        //length:chunkid为i的数据块对应的过滤器结构占用的字节数
+        //offset:当前chunkid为i的数据块的过滤器内容已经读取了多少字节
+        int length = 0, offset = 0; 
+        if(filter_offset[i][1] == filter_offset[i][3]) //chunkid为i的数据块对应的过滤器内容保存在同一页(同一个page)中
             length = filter_offset[i][4] - filter_offset[i][2];
-        else{
+        else{ //chunkid为i的数据块对应的过滤器内容需要跨页保存
             length = PAGESIZE - filter_offset[i][2];
             for(j = filter_offset[i][1]+1; j <= filter_offset[i][3]; j++){
                 length += PAGESIZE;
@@ -483,7 +483,7 @@ void Rfilter::read_Filters(const char* offsetpath, const char* filterpath){///re
             }
             block->ReadBlock(sdata, i, PAGESIZE);
             strmncpy(sdata, 0, filter_offset[i][4], meta, offset);
-            sign = 1; //已经在470行把这一个block的内容读进来了，对于下一个数据块chunkid，可以直接从当前sdata中获得数据，无需再ReadBlock
+            sign = 1; //已经在484行把这一个block的内容读进来了，对于下一个数据块chunkid，可以直接从当前sdata中获得数据，无需再ReadBlock
         }
         string afilter(meta, meta+length);
         filters[i] = afilter;
@@ -496,8 +496,8 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
     int lowchunk, highchunk; // lowchunk——与范围查询有重合、需要计算的最低数据块id；highchunk——与范围查询有重合、需要计算的最高数据块id
     vector<int> p1(m);
     vector<int> p2(m);
-    vector<int> coor(m);
-    vector<int> q(2*m);
+    vector<int> coor(m); // coor[j]:当前数据块在下标为j的维度上是第(coor[j]+1)个块
+    vector<int> q(2*m); //TODO:q中内容的含义是什么？
     int nemptychunks, borderchunks, overlapchunks;
     int cid, inrange, isborderchunk;
     double filtertime, processtime;
@@ -510,6 +510,8 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
     vector<vector<int>> query;
     loadQuery(querypath, query);
     for(i = 0; i < query.size(); i++){
+        //lowchunk:可能存在查询结果的最小chunkid
+        //highchunk:可能存在查询结果的最大chunkid
         lowchunk = 0, highchunk = 0;
         vector<int> chunklist;
         for(j = 0; j < m; j++){
@@ -519,6 +521,7 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
             highchunk = highchunk << piecesbit[j] + p2[j];
         }
         ///compute the overlapping chunks, find the border chunks and filter them
+        //overlapchunks：包括被区间查询完全覆盖的块 和 部分覆盖的块(borderchunk)
         borderchunks = 0, overlapchunks = 0;
         timer->Start();
         for(k = lowchunk; k <= highchunk; k++){

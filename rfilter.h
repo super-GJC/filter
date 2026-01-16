@@ -13,8 +13,8 @@ public:
     int m; //猜测 m 是维数，之后要在全部维度中定义指标来选择
     vector<int> dimbit;///the bits of cardinality on each dimension
     vector<int> chunkbit;///the bits of chunk length (logical_size) on each dimension
-    vector<int> piecesbit;///the bits of chunk number on each dimension
-    vector<int> powpieces;
+    vector<int> piecesbit;///the bits of chunk number on each dimension.对于第i维，该维度分成块的数量为pow(2, piecesbit[i])
+    vector<int> powpieces;//powpieces[i]:对于维度i，该维度分成块的数量。 powpieces[i] = pow(2, piecesbit[i])
     vector<int> intervallen;///the length of partition interval on each dim
     vector<int> intervalbit;
     int chunknum;///total chunk number
@@ -72,10 +72,21 @@ public:
         filters.resize(chunknum);
         for(i = 0; i < chunknum; i++) filter_offset[i].resize(5);
         for(i = 0; i < m; i++){
+            /*
+            总共的一维范围数量：
+            紫色三角形：logical_size0[i] - intervallen[i] -1
+            蓝色正方形：logical_size0[i] - intervallen[i] -1
+            绿色圆形：logical_size0[i]
+            红色菱形：1 + 2 + ... + (logical_size0[i] / intervallen[i]) = 等差数列求和 
+                                                                       = (intervallen[i] + logical_size0[i]) * logical_size0[i] / (intervallen[i] ** 2) * 2
+                                                                       = (intervallen[i] + logical_size0[i]) / 2
+                                                                       = 0.5 * intervallen[i] + 0.5 * logical_size0[i]
+            */
+           //对于维度i候选的CRScⁱ集合的大小为上述四个数的累加，即3.5 * logical_size0[i] - 1.5 * intervallen[i] - 2
             oneDrange_bit[i] = ceil(log(3.5 * logical_size0[i] - 1.5 * intervallen[i] - 2) / log(2));
             oneDrangebits += oneDrange_bit[i];
         }
-        allmranges = pow(2, oneDrangebits);
+        allmranges = pow(2, oneDrangebits); //所有多维范围的排序数范围为[0,allmranges-1]
     }
 
 
