@@ -6,7 +6,7 @@
 int subset_num;
 int n ;
 int N ;//data set size
-int M = 3 ;//dimension number  M 与 RFilter类的属性 m 有区别吗？ 
+int M = 2 ;//dimension number  M 与 RFilter类的属性 m 有区别吗？ 
 int B ;
 int bucket_num ;
 int independent = 1 ;//1:independent, 0:dependent 这是维度排序算法中是否独立的标记变量吗？
@@ -15,7 +15,7 @@ vector<int> d = {16,16};
 vector<int> dbit ; // dbit[i] 计算公式与 dimbit[i] 相同。即多维数组第i维的大小为pow(2,dbit[i])
 int dbit_sum ; //整个多维数组的逻辑大小(单元格数)为 pow(2,dbit_sum)
 int page_capacity ;//the tuple number in a page
-vector<int> logical_size = {8,8};///2^a
+vector<int> logical_size = {4,4};///2^a
 vector<int> logical_size0;
 int lnum_max ;
 int batch ;

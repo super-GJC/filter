@@ -3,6 +3,7 @@
 #include "BlockManager.h"
 #include "Timer.h"
 #include "bfilter.h"
+#include <unordered_map>
 
 
 
@@ -33,6 +34,10 @@ public:
     uint64_t allmranges;///the number of all possible multi-dimensional ranges
     vector<vector<vector<uint16_t>>> mulDrange;
     vector<string> filters;
+
+    //key:使用bloom filter保存过滤器结构的chunkid;
+    //value:该数据块创建bloom filter时传入num参数的大小(即该数据块的rangeids.size())
+    unordered_map<int, uint64_t> bloomFilterMap;
 
 
 

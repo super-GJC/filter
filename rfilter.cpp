@@ -233,6 +233,7 @@ void Rfilter::construct_Rangefilter(const char* datapath, const char* binarypath
         if(allmranges / rangeids.size() >= bitsperkey) { ///build bloom filter
             Bfilter *bf = new Bfilter(rangeids.size());
             bf->construct_Bloomfilter(i, rangeids);
+            bloomFilterMap[i] = rangeids.size();
         }
         else{
             write_RFbitmap(i);////////////////////////////final page is not writen
@@ -486,7 +487,31 @@ void Rfilter::read_Filters(const char* offsetpath, const char* filterpath){///re
             sign = 1; //已经在484行把这一个block的内容读进来了，对于下一个数据块chunkid，可以直接从当前sdata中获得数据，无需再ReadBlock
         }
         string afilter(meta, meta+length);
+    
+        cout << "十六进制转储 (" << afilter.length() << " 字节):" << endl;
+        for (int i = 0; i < length; ++i) {
+            cout << hex << setw(2) << setfill('0') 
+                      << (static_cast<unsigned int>(afilter[i]) & 0xFF) << " ";
+        
+            if ((i + 1) % 8 == 0) {
+                cout << " ";
+            }
+        
+            if ((i + 1) % 16 == 0) {
+                cout << endl;
+            }
+        }
+    
+        // 处理可能不足16字节的最后一行
+        if (length % 16 != 0) {
+            cout << endl;
+        }
+        cout << dec;
+
         filters[i] = afilter;
+        
+        cout << "filters[i]的长度：" << filters[i].length() << " 字节" << endl;
+        cout << dec << endl;
     }
     return;
 }
@@ -497,28 +522,34 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
     vector<int> p1(m);
     vector<int> p2(m);
     vector<int> coor(m); // coor[j]:当前数据块在下标为j的维度上是第(coor[j]+1)个块
-    vector<int> q(2*m); //TODO:q中内容的含义是什么？
+    vector<int> q(2*m); //q:区间查询与当前块重叠的范围相对于当前块的偏移量，相当于论文中符号q_c'
     int nemptychunks, borderchunks, overlapchunks;
     int cid, inrange, isborderchunk;
     double filtertime, processtime;
     Timer* timer = new Timer();
 
-    Bfilter* bf = new Bfilter(100);
+    //TODO:在搜索某一块的BloomFilter时，需要确定传入的参数num(该块rangeids.size())后重新初始化
+    // Bfilter* bf = new Bfilter(12); //为什么这里bf传参传了一个100？不是应该从文件读吗？
     ofstream fout(resultpath, ios::out);
     BlockManager* block = new BlockManager(binarypath, O_CREAT, PAGESIZE);
     read_Filters(offsetpath, filterpath);
     vector<vector<int>> query;
     loadQuery(querypath, query);
     for(i = 0; i < query.size(); i++){
-        //lowchunk:可能存在查询结果的最小chunkid
-        //highchunk:可能存在查询结果的最大chunkid
         lowchunk = 0, highchunk = 0;
+        //TODO：chunklist中还应该加入非空的完全覆盖的块Ccover,在if(borderchunk == 0)语句块中进行判断操作
         vector<int> chunklist;
         for(j = 0; j < m; j++){
+            p1[j] = query[i][2*j] / logical_size[i];
+            lowchunk = (lowchunk << piecesbit[j]) + p1[j];
+            p2[j] = query[i][2*j+1] / logical_size[i];
+            highchunk = (highchunk << piecesbit[j]) + p2[j];
+            /*
             p1[j] = query[i][2*j] / logical_size[i];
             lowchunk = lowchunk << piecesbit[j] + p1[j];
             p2[j] = query[i][2*j+1] / logical_size[i];
             highchunk = highchunk << piecesbit[j] + p2[j];
+            */
         }
         ///compute the overlapping chunks, find the border chunks and filter them
         //overlapchunks：包括被区间查询完全覆盖的块 和 部分覆盖的块(borderchunk)
@@ -530,7 +561,8 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
             isborderchunk = 0;
             for(j = m-1; j >= 0; j--){
                 coor[j] = cid & (powpieces[j] - 1);
-                cid >> piecesbit[j];
+                cid = cid >> piecesbit[j];
+                // cid >> piecesbit[j];
                 if(coor[j]<p1[j] || coor[j]>p2[j]) {
                     inrange = 0;
                     break;
@@ -539,12 +571,18 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
             }
             if(inrange==0) continue;
             overlapchunks++;
-            if(isborderchunk==0) continue;
+            if(isborderchunk==0){
+                if(chunksize[k] > 0){
+                    chunklist.push_back(k);
+                    nemptychunks++;
+                }
+                continue;
+            }
             borderchunks++;///overlapping border chunks, not considering empty or non-empty-----///
             ///search range on the chunk's filter
             for(j = 0; j < m; j++){
                 q[2*j] = max(query[i][2*j], coor[j]*logical_size[j]) - coor[j]*logical_size[j];
-                q[2*j+1] = min(query[i][2*j+1], (coor[j] + 1) * logical_size[j] - 1) - coor[j] * logical_size[j];
+                q[2*j+1] = min(query[i][2*j+1], (coor[j] + 1) * logical_size[j] - 1) - coor[j] * logical_size[j]; //(coor[j] + 1) * logical_size[j] - 1)为当前块在维度j上最大的下标号
             }
             vector<uint64_t> mranges;
             get_MulRanges4query(q, mranges);
@@ -558,6 +596,7 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
                 }
             }
             else{///bloom filter
+                Bfilter* bf = new Bfilter(bloomFilterMap[k]);
                 for(j = 0; j < mranges.size(); j++){
                     if(bf->search_Bloomfilter(filters[k], mranges[j])==1){
                         chunklist.push_back(k);
@@ -574,7 +613,8 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
         nemptychunks = 0;///real non-empty chunks
         timer->Start();
         for(k = 0; k < chunklist.size(); k++){
-            for(j = filter_offset[chunklist[k]][1]; j <= filter_offset[chunklist[k]][3]; j++){//page
+            tuples.clear();
+            for(j = page_startid[chunklist[k]] /*filter_offset[chunklist[k]][1]*/; j <= page_endid[chunklist[k]] /*filter_offset[chunklist[k]][3]*/; j++){//page
                 read_Page(block, j, tuples);
                 sign1 = 0;
                 for(g = 0; g < tuples.size(); g++){

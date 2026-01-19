@@ -62,6 +62,7 @@ void Bfilter::write_Bloomfilter(int chunkid){
 }
 ///------------------------------------------------------------------------------------------------------------------------------------------
 int Bfilter::search_Bloomfilter(string sbitmap, uint64_t srange){
+    cout << "sbitmap的长度:" << sbitmap.length() << " 字节" << endl;
     int i, j;
     uint32_t p, u;
     const char* c = to_string(srange).c_str();
