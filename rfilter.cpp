@@ -3,7 +3,6 @@
 
 
 ///--------------------------------------------------------------------------------------------------------------------
-// TODO:体会 piecesbit[i] 和 logical_size[i] 的含义
 // GUESS: piecesbit[i]的含义：对于第i维，该维度分成块的数量为pow(2, piecesbit[i])
 //        logical_size[i]的含义：分块时第i维的逻辑大小为logical_size[i]。注意到logical_size[i]没有初始化代码，只能由人为手动给出？
 void Rfilter::transfer_Txt_ToBinaryfile(const char* datapath, const char* binarypath){
@@ -293,11 +292,27 @@ void Rfilter::compute_Total1Drange(){
             //logical_size0[i] - intervallen[i] -1 对应的是紫色三角和蓝色正方形的数量
             oneDrange[i][j].push_back((uint8_t)(2*(logical_size0[i] - intervallen[i] -1) + j));
             ///3. [a,b], a and b are partition values ，对应PPT中红色菱形
+            //对于PV集合外的j以及j = 0 和 j = logical_size0[i] - 1，都没有少算一行红色菱形的问题，处理逻辑无需变化
             int sum = offset, beginp;
             for(k = 0; k < interval + 1; k++){//row
                 sum = sum + intervallen[i] - k;
                 beginp = sum - (intervallen[i] - interval);
                 for(g = interval; g < intervallen[i]; g++){
+                    oneDrange[i][j].push_back( (uint8_t)beginp++);
+                }
+            }
+
+            //对于PV集合内除了j = 0和j = logical_size0[i] - 1的j，有少算一行红色菱形的问题，需要再多计算一行红色菱形
+            //假设值j对应的interval变量值为interval1，则j + 1该变量取值为interval1 + 1
+            /*思路：可以理解成加入值j + 1的最后一行红色菱形，
+            按照上方处理逻辑，算最后一行红色菱形时sum = sum + intervallen[i] - (interval1 + 1)，对应的表达式则为sum = sum + intervallen[i] - (interval + 1)
+            同理beginp = sum - (intervallen[i] - (interval1 + 1))，故对应的表达式则为beginp = sum - (intervallen[i] - (interval + 1))
+            同理g = interval1 + 1，对应的表达式为g = interval + 1
+            */
+            if(((j + 1) % intervallen[i]) == 0 && j != 0 && j != logical_size0[i] - 1){
+                sum = sum + intervallen[i] - (interval + 1);
+                beginp = sum - (intervallen[i] - (interval + 1));
+                for(g = interval + 1; g < intervallen[i]; g++){
                     oneDrange[i][j].push_back( (uint8_t)beginp++);
                 }
             }
@@ -509,7 +524,7 @@ void Rfilter::read_Filters(const char* offsetpath, const char* filterpath){///re
         cout << dec;
 
         filters[i] = afilter;
-        
+
         cout << "filters[i]的长度：" << filters[i].length() << " 字节" << endl;
         cout << dec << endl;
     }
@@ -644,8 +659,8 @@ void Rfilter::get_MulRanges4query(vector<int> aquery, vector<uint64_t> &mranges)
     vector<vector<int>> oneranges(m);
     ///get one-dimensional ranges
     /*
-    GUESS:aquery[0]——第一个维度查询范围的最小值； aquery[1]——第一个维度查询范围的最大值；
-          aquery[2]——第二个维度查询范围的最小值； aquery[3]——第二个维度查询范围的最大值；依此类推
+    aquery[0]——第一个维度查询范围的最小值； aquery[1]——第一个维度查询范围的最大值；
+    aquery[2]——第二个维度查询范围的最小值； aquery[3]——第二个维度查询范围的最大值；依此类推
     */
     for(i = 0; i < aquery.size()/2; i++){ 
         interval1 = aquery[2*i] / intervallen[i];
