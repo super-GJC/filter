@@ -555,9 +555,9 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
         //TODO：chunklist中还应该加入非空的完全覆盖的块Ccover,在if(borderchunk == 0)语句块中进行判断操作
         vector<int> chunklist;
         for(j = 0; j < m; j++){
-            p1[j] = query[i][2*j] / logical_size[i];
+            p1[j] = query[i][2*j] / logical_size[j];
             lowchunk = (lowchunk << piecesbit[j]) + p1[j];
-            p2[j] = query[i][2*j+1] / logical_size[i];
+            p2[j] = query[i][2*j+1] / logical_size[j];
             highchunk = (highchunk << piecesbit[j]) + p2[j];
             /*
             p1[j] = query[i][2*j] / logical_size[i];
@@ -669,8 +669,8 @@ void Rfilter::get_MulRanges4query(vector<int> aquery, vector<uint64_t> &mranges)
         offset2 = aquery[2*i+1] % intervallen[i];
         p1 = (aquery[2*i]+1) / intervallen[i];
         p2 = (aquery[2*i+1]+1) / intervallen[i];
-        num1 = 2*(logical_size0[i] - intervallen[i] - 1);
-        num2 = 3*logical_size0[i] - 2*intervallen[i] - 2;
+        num1 = 2*(logical_size0[i] - intervallen[i] - 1); //紫色三角形+蓝色正方形 数量总和
+        num2 = 3*logical_size0[i] - 2*intervallen[i] - 2; //紫色三角形+蓝色正方形+绿色圆形 数量总和
         if(aquery[2*i] == aquery[2*i+1]){///[a,a]
             oneranges[i].push_back(num1 + aquery[2*i]);
             continue;
@@ -717,7 +717,7 @@ void Rfilter::get_MulRanges4query(vector<int> aquery, vector<uint64_t> &mranges)
         ///[a,b], a and b are not partition values
         if(interval1==interval2){
             for(j = offset1; j <= offset2; j++){
-                oneranges[i].push_back(num1 + aquery[2*i]+j);
+                oneranges[i].push_back(num1 + aquery[2*i]+j); //只由多个绿色圆形组成
             }
         }
         else{
