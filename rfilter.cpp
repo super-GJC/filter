@@ -676,14 +676,14 @@ void Rfilter::get_MulRanges4query(vector<int> aquery, vector<uint64_t> &mranges)
             continue;
         }
         if(aquery[2*i]==0 || offset1 == intervallen[i]-1){///[a,b], a is partition value
-            if(offset2 == intervallen[i]-1){///b is a partition value
+            if(offset2 == intervallen[i]-1){///b is a partition value，结果中是一个红色菱形
                 sum = 0;
                 for(j = 0; j < p1; j++)///row
                     sum = sum + intervallen[i] - j;
                 oneranges[i].push_back(num2 + sum + p2 - p1 - 1);
             }
             else{///b is not a partition value
-                if(aquery[2*i+1] - aquery[2*i] < intervallen[i]){ ///b is near, distance is smaller than interval length
+                if(aquery[2*i+1] - aquery[2*i] < intervallen[i]){ ///b is near, distance is smaller than interval length，结果中是一个紫色三角形
                     if(aquery[2*i]==0) {
                         oneranges[i].push_back(offset2 - 1);
                     }
@@ -691,7 +691,7 @@ void Rfilter::get_MulRanges4query(vector<int> aquery, vector<uint64_t> &mranges)
                         oneranges[i].push_back(2*(intervallen[i]-1) * p1 - 2 + offset2);
                     }
                 }
-                else{///b is far
+                else{///b is far，结果中是一个红色菱形+一个紫色三角形
                     sum = 0;
                     for(j = 0; j < p1; j++)///row
                         sum = sum + intervallen[i] - j;
@@ -702,10 +702,10 @@ void Rfilter::get_MulRanges4query(vector<int> aquery, vector<uint64_t> &mranges)
             continue;
         }
         if(offset2 == intervallen[i]-1){///[a,b], b is a partition value
-            if(aquery[2*i+1] - aquery[2*i] < intervallen[i]){///a is near
+            if(aquery[2*i+1] - aquery[2*i] < intervallen[i]){///a is near，结果中是一个蓝色正方形
                 oneranges[i].push_back(2*(intervallen[i]-1) * interval1 - 2 + intervallen[i]-1 + offset1);
             }
-            else{///a is far
+            else{///a is far，结果中是一个蓝色正方形+一个红色菱形
                 sum = 0;
                 for(j = 0; j <= p1; j++)///row
                     sum = sum + intervallen[i] - j;
@@ -716,16 +716,16 @@ void Rfilter::get_MulRanges4query(vector<int> aquery, vector<uint64_t> &mranges)
         }
         ///[a,b], a and b are not partition values
         if(interval1==interval2){
-            for(j = offset1; j <= offset2; j++){
-                oneranges[i].push_back(num1 + aquery[2*i]+j); //只由多个绿色圆形组成
+            for(j = offset1; j <= offset2; j++){ //总共有 offset2 - offset1 + 1 个元素，第一个元素为num1 + aquery[2*i]
+                oneranges[i].push_back(num1 + aquery[2*i] + j - offset1); //只由多个绿色圆形组成
             }
         }
         else{
-            if(interval1 + 1 == interval2){///adjcent intervals
+            if(interval1 + 1 == interval2){///adjcent intervals，结果中是一个蓝色正方形+一个紫色三角形
                 oneranges[i].push_back(2*(intervallen[i]-1) * interval1 - 2 + intervallen[i]-1 + offset1);
                 oneranges[i].push_back(2*(intervallen[i]-1) * interval2 - 2 + offset2);
             }
-            else{
+            else{ //a和b之间至少有两个划分值，结果中是一个蓝色正方形+一个红色菱形+一个紫色三角形
                 oneranges[i].push_back(2*(intervallen[i]-1) * interval1 - 2 + intervallen[i]-1 + offset1);
                 sum = 0;
                 for(j = 0; j <= p1; j++)///row
