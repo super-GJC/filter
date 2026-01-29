@@ -475,7 +475,7 @@ void Rfilter::read_Filters(const char* offsetpath, const char* filterpath){///re
             length = filter_offset[i][4] - filter_offset[i][2];
         else{ //chunkid为i的数据块对应的过滤器内容需要跨页保存
             length = PAGESIZE - filter_offset[i][2];
-            for(j = filter_offset[i][1]+1; j <= filter_offset[i][3]; j++){
+            for(j = filter_offset[i][1]+1; j < filter_offset[i][3]; j++){
                 length += PAGESIZE;
             }
             length += filter_offset[i][4];
@@ -492,12 +492,12 @@ void Rfilter::read_Filters(const char* offsetpath, const char* filterpath){///re
             offset = offset + PAGESIZE - filter_offset[i][2];
             sdata[0] = '\0';
             for(j = filter_offset[i][1]+1; j < filter_offset[i][3]; j++){
-                block->ReadBlock(sdata, i, PAGESIZE);
+                block->ReadBlock(sdata, j, PAGESIZE);
                 strmncpy(sdata, 0, PAGESIZE, meta, offset);
                 offset += PAGESIZE;
                 sdata[0] = '\0';
             }
-            block->ReadBlock(sdata, i, PAGESIZE);
+            block->ReadBlock(sdata, filter_offset[i][3], PAGESIZE);
             strmncpy(sdata, 0, filter_offset[i][4], meta, offset);
             sign = 1; //已经在484行把这一个block的内容读进来了，对于下一个数据块chunkid，可以直接从当前sdata中获得数据，无需再ReadBlock
         }
