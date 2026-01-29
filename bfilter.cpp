@@ -40,10 +40,10 @@ void Bfilter::write_Bloomfilter(int chunkid){
     else{
         strmncpy(bitmap, 0, PAGESIZE - beginbyte1, sdata1, beginbyte1);
         block1->WriteBlock(sdata1, fcurpageid++, PAGESIZE);
-        beginbyte1 = 0;
-        sdata1[0] = '\0';
         offset += (PAGESIZE - beginbyte1);
         offset1 = offset;
+        beginbyte1 = 0;
+        sdata1[0] = '\0';
         for(int k = 0; k < (bytenum - offset1) / PAGESIZE; k++){
             strmncpy(bitmap, offset, PAGESIZE, sdata1, beginbyte1);
             block1->WriteBlock(sdata1, fcurpageid++, PAGESIZE);
