@@ -3,8 +3,8 @@
 
 
 ///--------------------------------------------------------------------------------------------------------------------
-// GUESS: piecesbit[i]的含义：对于第i维，该维度分成块的数量为pow(2, piecesbit[i])
-//        logical_size[i]的含义：分块时第i维的逻辑大小为logical_size[i]。注意到logical_size[i]没有初始化代码，只能由人为手动给出？
+// piecesbit[i]的含义：对于第i维，该维度分成块的数量为pow(2, piecesbit[i])
+// logical_size[i]的含义：分块时第i维的逻辑大小为logical_size[i]。注意到logical_size[i]没有初始化代码，只能由人为手动给出？
 void Rfilter::transfer_Txt_ToBinaryfile(const char* datapath, const char* binarypath){
     int i, j, g;
     ///read data, the first time
@@ -47,6 +47,16 @@ void Rfilter::transfer_Txt_ToBinaryfile(const char* datapath, const char* binary
 
     ///read data the second time, and write the chunks
     //第二轮读取数据文件，是为了将具体的元组写入到对应的数据块chunk中去
+    //FIXME：这种数组的分配方式会在栈上分配空间，在chunknum很大时会发生栈内存溢出。考虑修改成动态分配内存
+    /*
+    栈溢出原因详解：
+    1.buffer数组本身（存储chunknum个vector<vector<int>>对象）在栈上（如果是局部变量）
+    2.每个vector<vector<int>>对象内部，存储vector<int>数组的内存是在堆上
+    3.每个vector<int>对象内部，存储int数组的内存也是在堆上
+    如果chunknum很大，那么数组buffer本身可能会很大（因为每个vector<vector<int>>对象通常为24字节，64位系统）。
+    例如，chunknum=1000000，那么数组buffer的大小为1000000 * 24 = 24MB。这可能会造成栈溢出（如果buffer是局部变量）。
+    所以，通常建议将这样的数组放在堆上，例如使用vector<vector<vector<int>>>或动态分配。
+    */
     vector<vector<int>> buffer[chunknum];
     int beginbyte = 0, beginbit = 0;
     unsigned char c = 0;
@@ -93,7 +103,7 @@ void Rfilter::transfer_Txt_ToBinaryfile(const char* datapath, const char* binary
             transfer_Tuple_ToBinary(buffer[i][g], c, beginbyte, beginbit);
         }
         for(g < buffer[i].size(); g < page_capacity; g++){ //这是在干什么？
-            transfer_Tuple_ToBinary(empty_tuple, c, beginbyte, beginbit); //GUESS:empty_tuple标记着输入元组的结束
+            transfer_Tuple_ToBinary(empty_tuple, c, beginbyte, beginbit); //empty_tuple为空的元组，全0
         }
         block->WriteBlock(sdata, page_currentid[i]++, PAGESIZE);
         sdata[0] = '\0'; beginbyte = 0; beginbit = 0; c = 0;
@@ -330,6 +340,7 @@ void Rfilter::compute_Total1Drange(){
 void Rfilter::compute_Rangeset(int chunkid, vector<vector<int>> alltuples, vector<uint64_t> &rangeIDs){
     int i, j, g, k;
     int mbyte, mbit;
+    //FIXME:当allmranges很大时，考虑bitmapbytes使用int数据类型的溢出问题
     bitmapbytes = (int)ceil((double)allmranges / BYTE); //chunkid对应的数据块的位图需要的字节数为bitmapbytes
     rfbitmap = new char[bitmapbytes]; // rfbitmap为数据块chunkid对应的位图
     for(i = 0; i < bitmapbytes; i++) rfbitmap[i] = 0;
@@ -360,15 +371,15 @@ void Rfilter::compute_Rangeset(int chunkid, vector<vector<int>> alltuples, vecto
         ///compute the multi-dimensional ranges
         // mranges[g]：对应论文中no(r)的计算
         for(g = 0; g < rangenum; g++) {
-            // GUESS:mranges[g]表达的含义：第g+1个多维范围的排序数为mranges[g]
+            //mranges[g]表达的含义：第g+1个多维范围的排序数为mranges[g]
             //g % oneDrange[0][tupoffset[0]].size() 这个取余表示的是 mranges[g] 在第0维选择是列表中的第几个
             mranges[g] = oneDrange[0][tupoffset[0]][g % oneDrange[0][tupoffset[0]].size()];///////////// 第一维初始化
         }
         for(k = 1; k < m; k++) {
             for(g = 0; g < rangenum; g++){
-                // GUESS:之后的每一个维度乘完了累加？
+                // 之后的每一个维度乘完了累加？
                 mranges[g] = mranges[g] << oneDrange_bit[k];//////////////
-                // GUESS：与347行同理，g / lengths[k] % oneDrange[k][tupoffset[k]].size() 这个取余表示的是 mranges[g] 在第k维选择是列表中的第几个
+                // 与347行同理，g / lengths[k] % oneDrange[k][tupoffset[k]].size() 这个取余表示的是 mranges[g] 在第k维选择是一维范围列表中的第几个
                 mranges[g] += oneDrange[k][tupoffset[k]][g / lengths[k] % oneDrange[k][tupoffset[k]].size()];//////////////
             }
         }
@@ -541,10 +552,9 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
     int nemptychunks, borderchunks, overlapchunks;
     int cid, inrange, isborderchunk;
     double filtertime, processtime;
+    double FPR = 0;
     Timer* timer = new Timer();
 
-    //TODO:在搜索某一块的BloomFilter时，需要确定传入的参数num(该块rangeids.size())后重新初始化
-    // Bfilter* bf = new Bfilter(12); //为什么这里bf传参传了一个100？不是应该从文件读吗？
     ofstream fout(resultpath, ios::out);
     BlockManager* block = new BlockManager(binarypath, O_CREAT, PAGESIZE);
     read_Filters(offsetpath, filterpath);
@@ -552,7 +562,6 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
     loadQuery(querypath, query);
     for(i = 0; i < query.size(); i++){
         lowchunk = 0, highchunk = 0;
-        //TODO：chunklist中还应该加入非空的完全覆盖的块Ccover,在if(borderchunk == 0)语句块中进行判断操作
         vector<int> chunklist;
         for(j = 0; j < m; j++){
             p1[j] = query[i][2*j] / logical_size[j];
@@ -587,6 +596,7 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
             if(inrange==0) continue;
             overlapchunks++;
             if(isborderchunk==0){
+                //进行判断操作，将非空的完全覆盖的块Ccover加入chunklist
                 if(chunksize[k] > 0){
                     chunklist.push_back(k);
                     nemptychunks++;
@@ -611,6 +621,8 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
                 }
             }
             else{///bloom filter
+                //在搜索某一块的BloomFilter时，需要确定传入的参数num(该块rangeids.size())后重新初始化
+                //chunkid对应块的num参数在构建过滤器时保存在bloomFilterMap中
                 Bfilter* bf = new Bfilter(bloomFilterMap[k]);
                 for(j = 0; j < mranges.size(); j++){
                     if(bf->search_Bloomfilter(filters[k], mranges[j])==1){
@@ -627,6 +639,7 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
         int sign1, sign2; //sign1标志当前页中是否有在范围查询内的元组，sign2标志当前元组是否在范围查询内
         nemptychunks = 0;///real non-empty chunks
         timer->Start();
+        //TODO:计算FPR
         for(k = 0; k < chunklist.size(); k++){
             tuples.clear();
             for(j = page_startid[chunklist[k]] /*filter_offset[chunklist[k]][1]*/; j <= page_endid[chunklist[k]] /*filter_offset[chunklist[k]][3]*/; j++){//page
@@ -646,7 +659,9 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
         }
         processtime = timer->GetRunningTime();
         timer->Stop();
-        fout<<overlapchunks<<" "<<borderchunks<<" "<<nemptychunks<<" "<<(double)nemptychunks/overlapchunks<<" "<<filtertime<<" "<<processtime<<endl;
+        FPR = (double)(chunklist.size() - nemptychunks)/chunklist.size();
+        // cout << "FPR = " << (double)(chunklist.size() - nemptychunks)/chunklist.size() << endl;
+        fout<<overlapchunks<<" "<<borderchunks<<" "<<nemptychunks<<" "<<(double)nemptychunks/overlapchunks<<" "<<filtertime<<" "<<processtime<<" "<<FPR<<endl;
     }//query
     fout.clear();
     fout.close();
