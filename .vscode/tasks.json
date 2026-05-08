@@ -16,6 +16,8 @@
                 "${workspaceFolder}/Timer.cpp",
                 "${workspaceFolder}/bfilter.cpp",
                 "${workspaceFolder}/rfilter.cpp",
+                "${workspaceFolder}/query.cpp",
+                "${workspaceFolder}/workloadAnalyzer.cpp",
                 "${workspaceFolder}/main.cpp",
                 "-o",
                 "${workspaceFolder}/main"
@@ -24,6 +26,29 @@
                 "kind": "build",
                 "isDefault": false
             },
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "build-workload-test",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-std=c++17",
+                "-g",
+                "-I${workspaceFolder}",
+                "${workspaceFolder}/BlockManager.cpp",
+                "${workspaceFolder}/Timer.cpp",
+                "${workspaceFolder}/bfilter.cpp",
+                "${workspaceFolder}/rfilter.cpp",
+                "${workspaceFolder}/query.cpp",
+                "${workspaceFolder}/workloadAnalyzer.cpp",
+                "${workspaceFolder}/test/workload_analyzer_test.cpp",
+                "-o",
+                "${workspaceFolder}/test/workload_analyzer_test"
+            ],
+            "group": "build",
             "problemMatcher": [
                 "$gcc"
             ]

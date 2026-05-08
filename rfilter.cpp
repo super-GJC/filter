@@ -514,30 +514,30 @@ void Rfilter::read_Filters(const char* offsetpath, const char* filterpath){///re
         }
         string afilter(meta, meta+length);
     
-        cout << "十六进制转储 (" << afilter.length() << " 字节):" << endl;
-        for (int i = 0; i < length; ++i) {
-            cout << hex << setw(2) << setfill('0') 
-                      << (static_cast<unsigned int>(afilter[i]) & 0xFF) << " ";
+        // cout << "十六进制转储 (" << afilter.length() << " 字节):" << endl;
+        // for (int i = 0; i < length; ++i) {
+        //     cout << hex << setw(2) << setfill('0') 
+        //               << (static_cast<unsigned int>(afilter[i]) & 0xFF) << " ";
         
-            if ((i + 1) % 8 == 0) {
-                cout << " ";
-            }
+        //     if ((i + 1) % 8 == 0) {
+        //         cout << " ";
+        //     }
         
-            if ((i + 1) % 16 == 0) {
-                cout << endl;
-            }
-        }
+        //     if ((i + 1) % 16 == 0) {
+        //         cout << endl;
+        //     }
+        // }
     
-        // 处理可能不足16字节的最后一行
-        if (length % 16 != 0) {
-            cout << endl;
-        }
-        cout << dec;
+        // // 处理可能不足16字节的最后一行
+        // if (length % 16 != 0) {
+        //     cout << endl;
+        // }
+        // cout << dec;
 
         filters[i] = afilter;
 
-        cout << "filters[i]的长度：" << filters[i].length() << " 字节" << endl;
-        cout << dec << endl;
+        // cout << "filters[i]的长度：" << filters[i].length() << " 字节" << endl;
+        // cout << dec << endl;
     }
     return;
 }

@@ -42,7 +42,11 @@ filter/
 ├── common.h           # 全局常量、宏、extern 变量（M, d, dbit, logical_size, filter_offset 等）
 ├── BlockManager.cpp/h # 按块（页）读写文件，O_DIRECT 等
 ├── Timer.cpp/h        # 计时
+├── md/                # 模块说明文档
+│   └── workloadAnalyzer.md
 ├── build.sh           # 构建脚本（当前仅 g++）
+├── test/              # 独立测试程序源码（如 workload 分析器自测）
+│   └── workload_analyzer_test.cpp
 ├── data/test/climate/ # 测试数据目录
 │   ├── data.txt       # 输入元组
 │   ├── query.txt     # 范围查询

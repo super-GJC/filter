@@ -81,6 +81,25 @@ int main()
 
 
     Rfilter* rf = new Rfilter();
+
+    // 1) 工作负载分析：模块本身无独立 init；分块所依赖的全局 d、logical_size、logical_size0 等已在上方就绪，
+    //    Rfilter 构造完成后即具备 piecesbit / powpieces 等元数据，无需读取 binary/filter。
+
+    // 2) 调用与 process_Queries 一致的规则，从全部查询负载汇总 border chunk id（去重、升序）
+    vector<int> collectBorderChunkIdsFromQueries(const Rfilter& rf,
+                                                 const char* querypath);
+    vector<int> border_chunk_ids =
+        collectBorderChunkIdsFromQueries(*rf, queryPath);
+
+    // 3) 输出到控制台：数量及 id 列表
+    cout << "[workload analyzer] border chunk count: " << border_chunk_ids.size()
+         << endl;
+    cout << "[workload analyzer] border chunk ids:";
+    for (i = 0; i < (int)border_chunk_ids.size(); i++) {
+        cout << " " << border_chunk_ids[i];
+    }
+    cout << endl;
+
     rf->construct_Rangefilter(dataPath, binaryPath1, filterPath, offsetPath);
     rf->process_Queries(binaryPath1,queryPath,offsetPath,filterPath,resultPath1);
 
@@ -122,18 +141,6 @@ void read_Cardinality(const char* datafolder){
     return;
 }
 ///------------------------------------------------------------------------------------------------------------------------------------------
-int compare_Twotuples(vector<int> a, vector<int> b){
-    int i;
-    int same = 0;
-    for(i = 0; i < a.size(); i++){
-        if(a[i]+1==b[i]) {same++;continue;}///the two tuples are continous
-        if(a[i]!=b[i]) return 0;
-    }
-    if(same == 1) return 2;
-    else if(same > 1) return 0;
-    return 1;///the two tuples are the same
-}
-///------------------------------------------------------------------------------------------------------------------------------------------
 void splitString(const string& s, vector<string>& tokens, char delim) {
 	tokens.clear();
 	auto string_find_first_not = [s, delim](size_t pos = 0) -> size_t {
@@ -152,28 +159,3 @@ void splitString(const string& s, vector<string>& tokens, char delim) {
 	return;
 }
 ///------------------------------------------------------------------------------------------------//
-void loadQuery(const char* querypath, vector<vector<int>> &qarray) {
-	ifstream fin(querypath);
-	string line;
-	if (fin)
-	{
-		while (getline(fin, line))
-		{
-			istringstream iss(line);
-			string temp;
-			vector<int> sv;
-			while (getline(iss, temp, ' ')) {
-				sv.push_back(stoi(temp));
-			}
-			qarray.push_back(sv);
-		}
-	}
-	fin.clear();
-	fin.close();
-}
-///------------------------------------------------------------------------------------------------//
-void strmncpy(char* s, int start1, int len, char* t, int start2){
-    for(int i = 0; i < len; i++)
-        t[start2+i] = s[start1+i];
-    return;
-}
