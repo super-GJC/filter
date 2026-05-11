@@ -4,6 +4,7 @@
 #include "Timer.h"
 #include "bfilter.h"
 #include <unordered_map>
+#include <unordered_set>
 
 
 
@@ -102,6 +103,9 @@ public:
     void read_Offsets(const char* offsetpath);
 
     void construct_Rangefilter(const char* datapath, const char* binarypath, const char* filterpath, const char* offsetpath);
+    /// useWorkload==false 时行为与四参数版本一致；为 true 时仅对 border_chunk_ids 中的非空块构建过滤器，其余非空块写 offset 类型 2（未建过滤器）
+    void construct_Rangefilter(const char* datapath, const char* binarypath, const char* filterpath, const char* offsetpath,
+                               bool useWorkload, const std::unordered_set<int>& border_chunk_ids);
     void compute_Total1Drange();///one-dimensional ranges
     void compute_Rangeset(int chunkid, vector<vector<int>> alltuples, vector<uint64_t> &rangeIDs);///multi-dimensional ranges, build bitmap as filter
     void write_RFbitmap(int chunkid);

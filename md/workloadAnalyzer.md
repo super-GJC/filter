@@ -64,3 +64,35 @@ g++ -std=c++17 -g -I. BlockManager.cpp Timer.cpp bfilter.cpp rfilter.cpp \
 - 输出**完全覆盖块**集合（`isborderchunk == 0` 且相交），用于与 border 集合互补；
 - 对每个 border chunk 记录「命中它的查询子集」，用于按负载选择编码维度；
 - 与 `construct_Rangefilter` 衔接：仅对返回的 id 列表构建/writing `filter.txt`。
+
+---
+
+## 工作负载感知构建与读取（已实现）
+
+### `construct_Rangefilter` 六参数重载
+
+- 声明：`void construct_Rangefilter(..., bool useWorkload, const std::unordered_set<int>& border_chunk_ids);`
+- **`useWorkload == false`**：直接调用四参数版本，行为与改造前完全一致。
+- **`useWorkload == true`**：
+  - 在遍历非空块时，若 `i ∉ border_chunk_ids`：不向 `filter.txt` 追加数据，仅向 `offset.txt` 写入一行  
+    `(i, page_startid[i], page_endid[i], 2, 0, 0, 0, 0)`，其中 **`filter_offset[i][0] == 2`** 表示未物化过滤器。
+  - 若 `i ∈ border_chunk_ids`：与四参数版本相同，读页、`compute_Rangeset`、位图或布隆，并写入 `filter.txt` 与 offset。
+  - 构建开始前 **`bloomFilterMap.clear()`**，避免沿用上一次的布隆 `num` 与本次 `filter.txt` 不一致。
+  - **尾页刷盘**：原 `write_RFbitmap` 仅在 `chunkid == last_validchunk` 时对 `sdata1` 做整页 `WriteBlock`；本路径下「最后一个实际写入过滤器的块」未必等于 `last_validchunk`，因此在循环结束后若 **`beginbyte1 > 0`**，再执行一次 `WriteBlock`，避免 `filter_workload.txt` 末尾截断导致查询阶段读错过滤器。
+
+### `read_Filters` 与类型 2
+
+- 在 `page_startid[i] == -1` 之后：若 **`filter_offset[i][0] == 2`**，则 `continue`，不向 `filter.txt` 读取字节。
+- **跨块 `sign` 优化**：原逻辑用 `sign` 避免相邻块在同一页内重复 `ReadBlock`；当中间夹有「文件中不占字节的 type 2 块」时，沿用 `sign` 会错位。处理方式为：**每个需要读取过滤器的块在读取前执行 `sign = 0`**，牺牲少量重复读页，保证与「稀疏写入」的 `filter.txt` 布局一致。
+
+### `main.cpp` 中的验证流程（climate / `query.txt`）
+
+1. `collectBorderChunkIdsFromQueries` 得到负载 border id 列表；转为 `unordered_set`。
+2. **基线**：四参数 `construct_Rangefilter` → `process_Queries`，结果写入 `result1.txt`，过滤器 `filter.txt`。
+3. **基线构建之后**从集合中 **剔除 `chunksize[i]==0` 的 id**（负载分析在 `transfer_Txt_ToBinaryfile` 之前执行，集合中可能含无元组块；若不剔除，重载在 `chunksize==0` 处 `continue` 不写 offset，会导致 `filter_offset` 仍为默认 0，查询时误判为位图）。
+4. **工作负载**：六参数 `construct_Rangefilter(..., true, border_set)` 写入 `filter_workload.txt` / `offset_workload.txt` → `process_Queries` 写入 `result_workload.txt`。
+5. **对比**：逐行比较 **overlap、borders、nempty、ratio、FPR**（列下标 0–3 与 6）；**`filtertime` / `processtime`** 因计时器浮动允许不同。同时打印 **`filter.txt` 与 `filter_workload.txt` 的字节数**，工作负载版应明显更小。
+
+### 使用前提
+
+- 运行时的查询集合应 **与用于计算 `border_chunk_ids` 的负载一致**（或为其子集），否则可能出现 **border 块未建过滤器** 而仍走布隆/位图分支的错误。扩展方案可为 `filter_offset[k][0]==2` 在 `process_Queries` 中增加保守分支（未在本轮最小改造中实现）。

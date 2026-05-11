@@ -256,6 +256,74 @@ void Rfilter::construct_Rangefilter(const char* datapath, const char* binarypath
 }
 
 ///------------------------------------------------------------------------------------------------------------------------------------------
+/// 工作负载感知构建：useWorkload==false 时委托四参数 construct_Rangefilter；为 true 时仅对 border_chunk_ids 中的非空块写入 filter.txt，其余非空块仅写 offset 且 filter 类型为 2（未物化过滤器）
+void Rfilter::construct_Rangefilter(const char* datapath, const char* binarypath, const char* filterpath, const char* offsetpath,
+                                    bool useWorkload, const unordered_set<int>& border_chunk_ids) {
+    if (!useWorkload) {
+        construct_Rangefilter(datapath, binarypath, filterpath, offsetpath);
+        return;
+    }
+    // 避免沿用上一次的布隆参数，防止与本次 filter.txt 内容不一致
+    bloomFilterMap.clear();
+    int i, j, k, g;
+    int currentid;
+    transfer_Txt_ToBinaryfile(datapath, binarypath);
+    ofstream fout(offsetpath, ios::out);
+    vector<vector<int>> tuples;
+    vector<vector<int>> tuplesintotal;
+    int beginbyte = 0, beginbit = 0;
+    unsigned char c = 0;
+    sdata[0] = '\0';
+    sdata1[0] = '\0';
+    fcurpageid = 0;
+    beginbyte1 = 0;
+    BlockManager* block = new BlockManager(binarypath, O_CREAT, PAGESIZE);
+    block1 = new BlockManager(filterpath, O_CREAT, PAGESIZE);
+    compute_Total1Drange();
+    for (i = 0; i < chunknum; i++) {
+        if (chunksize[i] == 0)
+            continue;
+        // 非 border 负载块：不写 filter.txt，仅记录页范围与类型 2，供 read_Filters 跳过读过滤器
+        if (border_chunk_ids.find(i) == border_chunk_ids.end()) {
+            filter_offset[i][0] = 2;
+            filter_offset[i][1] = 0;
+            filter_offset[i][2] = 0;
+            filter_offset[i][3] = 0;
+            filter_offset[i][4] = 0;
+            fout << i << " " << page_startid[i] << " " << page_endid[i] << " " << filter_offset[i][0] << " "
+                 << filter_offset[i][1] << " " << filter_offset[i][2] << " " << filter_offset[i][3] << " "
+                 << filter_offset[i][4] << endl;
+            continue;
+        }
+        currentid = page_startid[i];
+        for (g = page_startid[i]; g <= page_endid[i]; g++) {
+            read_Page(block, g, tuples);
+            tuplesintotal.insert(tuplesintotal.end(), tuples.begin(), tuples.end());
+            tuples.clear();
+        }
+        vector<uint64_t> rangeids;
+        compute_Rangeset(i, tuplesintotal, rangeids);
+        if (allmranges / rangeids.size() >= bitsperkey) {
+            Bfilter* bf = new Bfilter(rangeids.size());
+            bf->construct_Bloomfilter(i, rangeids);
+            bloomFilterMap[i] = rangeids.size();
+        } else {
+            write_RFbitmap(i);
+        }
+        tuplesintotal.clear();
+        fout << i << " " << page_startid[i] << " " << page_endid[i] << " " << filter_offset[i][0] << " "
+             << filter_offset[i][1] << " " << filter_offset[i][2] << " " << filter_offset[i][3] << " "
+             << filter_offset[i][4] << endl;
+    }
+    // write_RFbitmap 仅在 chunkid==last_validchunk 时刷尾页；本路径最后写入过滤器的块未必是 last_validchunk，需显式刷盘以免 filter.txt 截断
+    if (beginbyte1 > 0)
+        block1->WriteBlock(sdata1, fcurpageid++, PAGESIZE);
+    fout.clear();
+    fout.close();
+    return;
+}
+
+///------------------------------------------------------------------------------------------------------------------------------------------
 ///compute all the one-dimensional ranges for each value on each dim
 void Rfilter::compute_Total1Drange(){
     int i, j, k, g;
@@ -479,6 +547,11 @@ void Rfilter::read_Filters(const char* offsetpath, const char* filterpath){///re
     BlockManager* block = new BlockManager(filterpath, O_CREAT, PAGESIZE);
     for(i = 0; i < chunknum; i++){
         if(page_startid[i]==-1) continue;
+        // filter 类型 2：工作负载下未物化过滤器，filter.txt 中无对应字节，跳过读取
+        if (filter_offset[i][0] == 2)
+            continue;
+        // type2 在文件中不占空间，不能沿用 sign 跨块优化（否则会错用上一块缓冲区或漏读下一块首页）
+        sign = 0;
         //length:chunkid为i的数据块对应的过滤器结构占用的字节数
         //offset:当前chunkid为i的数据块的过滤器内容已经读取了多少字节
         int length = 0, offset = 0; 

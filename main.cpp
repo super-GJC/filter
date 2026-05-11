@@ -1,6 +1,11 @@
 #include "common.h"
 #include "bfilter.h"
 #include "rfilter.h"
+#include "workloadAnalyzer.h"
+
+#include <fstream>
+#include <sstream>
+#include <unordered_set>
 
 
 int subset_num;
@@ -29,6 +34,109 @@ char* sdata1;
 int beginbyte1;///write the filter file
 vector<vector<int>> filter_offset;
 int last_validchunk;///the last non-empty chunk
+
+/// 逐行比较两次 process_Queries 输出：列 0–3 与 6（FPR）须一致；列 4–5 为计时允许不同
+static bool compare_query_results_semantic(const string& path_a, const string& path_b) {
+    ifstream fa(path_a), fb(path_b);
+    string la, lb;
+    while (getline(fa, la) && getline(fb, lb)) {
+        istringstream ia(la), ib(lb);
+        vector<string> ta, tb;
+        string w;
+        while (ia >> w)
+            ta.push_back(w);
+        while (ib >> w)
+            tb.push_back(w);
+        if (ta.size() < 7 || tb.size() < 7)
+            return false;
+        for (int c = 0; c < 4; c++)
+            if (ta[c] != tb[c])
+                return false;
+        if (ta[6] != tb[6])
+            return false;
+    }
+    if (getline(fa, la) || getline(fb, lb))
+        return false;
+    return true;
+}
+
+static streamoff file_size_bytes(const string& path) {
+    ifstream f(path, ios::binary | ios::ate);
+    if (!f)
+        return -1;
+    return f.tellg();
+}
+
+/// 非空块中已在 filter.txt 物化过滤器的数量（filter_offset[i][0] 为 0 位图或 1 布隆；2 表示未建）
+static int count_materialized_filter_chunks(const Rfilter* rf) {
+    int n = 0;
+    for (int i = 0; i < rf->chunknum; i++) {
+        if (rf->chunksize[i] == 0)
+            continue;
+        int t = filter_offset[i][0];
+        if (t == 0 || t == 1)
+            n++;
+    }
+    return n;
+}
+
+/**
+ * 基线四参数 construct_Rangefilter 与六参数工作负载版对比测试：
+ * 负载分析 → 基线构建与查询 → 剔除空 border id → 工作负载构建与查询 → 结果语义比对与 filter 体积比对。
+ */
+void run_construct_rangefilter_compare_test(Rfilter* rf, const char* dataPath, const char* binaryPath,
+                                            const char* queryPath, const string& filterpath,
+                                            const string& offsetpath, const string& resultpath1,
+                                            const string& filter_workload, const string& offset_workload,
+                                            const string& result_workload) {
+    int i;
+    vector<int> border_chunk_ids = collectBorderChunkIdsFromQueries(*rf, queryPath);
+    unordered_set<int> border_chunk_set(border_chunk_ids.begin(), border_chunk_ids.end());
+
+    cout << "[workload analyzer] border chunk count: " << border_chunk_ids.size() << endl;
+    cout << "[workload analyzer] border chunk ids:";
+    for (i = 0; i < (int)border_chunk_ids.size(); i++) {
+        cout << " " << border_chunk_ids[i];
+    }
+    cout << endl;
+
+    rf->construct_Rangefilter(dataPath, binaryPath, filterpath.c_str(), offsetpath.c_str());
+    const int baseline_materialized_filters = count_materialized_filter_chunks(rf);
+    rf->process_Queries(binaryPath, queryPath, offsetpath.c_str(), filterpath.c_str(), resultpath1.c_str());
+
+    for (auto it = border_chunk_set.begin(); it != border_chunk_set.end();) {
+        if (rf->chunksize[*it] == 0)
+            it = border_chunk_set.erase(it);
+        else
+            ++it;
+    }
+
+    rf->construct_Rangefilter(dataPath, binaryPath, filter_workload.c_str(), offset_workload.c_str(), true,
+                              border_chunk_set);
+    const int workload_materialized_filters = count_materialized_filter_chunks(rf);
+    rf->process_Queries(binaryPath, queryPath, offset_workload.c_str(), filter_workload.c_str(),
+                        result_workload.c_str());
+
+    if (!compare_query_results_semantic(resultpath1, result_workload)) {
+        cerr << "[compare] result1 vs result_workload: MISMATCH (overlap/border/nempty/ratio/FPR)" << endl;
+    } else {
+        cout << "[compare] result1 vs result_workload: OK (same stats & FPR; times may differ)" << endl;
+    }
+
+    streamoff sz_filter = file_size_bytes(filterpath);
+    streamoff sz_filter_wl = file_size_bytes(filter_workload);
+    cout << "[compare] filter.txt size (bytes): " << sz_filter << endl;
+    cout << "[compare] filter_workload.txt size (bytes): " << sz_filter_wl << endl;
+    if (sz_filter > 0 && sz_filter_wl > 0 && sz_filter_wl < sz_filter) {
+        cout << "[compare] workload filter file is smaller than baseline (expected)" << endl;
+    }
+
+    cout << "[compare] materialized filter chunks (baseline, no workload): " << baseline_materialized_filters
+         << endl;
+    cout << "[compare] materialized filter chunks (workload-aware build): " << workload_materialized_filters
+         << endl;
+    cout << "[compare] non-empty chunks total (cknum): " << rf->cknum << endl;
+}
 
 
 int main()
@@ -72,6 +180,11 @@ int main()
     string resultpath1 = dataf + "result1.txt";
     const char* resultPath1 = resultpath1.c_str();
 
+    // 工作负载构建与基线对比输出（与 query.txt 对应）；基线仍写入 result1.txt
+    string result_workload = dataf + "result_workload.txt";
+    string offset_workload = dataf + "offset_workload.txt";
+    string filter_workload = dataf + "filter_workload.txt";
+
     string resultpath2 = dataf + "result2.txt";
     const char* resultPath2 = resultpath2.c_str();
 
@@ -81,28 +194,11 @@ int main()
 
 
     Rfilter* rf = new Rfilter();
+    // rf->construct_Rangefilter(dataPath, binaryPath1, filterpath, offsetpath);
+    // rf->process_Queries(binaryPath1, queryPath, offsetpath, filterpath, resultpath1);
 
-    // 1) 工作负载分析：模块本身无独立 init；分块所依赖的全局 d、logical_size、logical_size0 等已在上方就绪，
-    //    Rfilter 构造完成后即具备 piecesbit / powpieces 等元数据，无需读取 binary/filter。
-
-    // 2) 调用与 process_Queries 一致的规则，从全部查询负载汇总 border chunk id（去重、升序）
-    vector<int> collectBorderChunkIdsFromQueries(const Rfilter& rf,
-                                                 const char* querypath);
-    vector<int> border_chunk_ids =
-        collectBorderChunkIdsFromQueries(*rf, queryPath);
-
-    // 3) 输出到控制台：数量及 id 列表
-    cout << "[workload analyzer] border chunk count: " << border_chunk_ids.size()
-         << endl;
-    cout << "[workload analyzer] border chunk ids:";
-    for (i = 0; i < (int)border_chunk_ids.size(); i++) {
-        cout << " " << border_chunk_ids[i];
-    }
-    cout << endl;
-
-    rf->construct_Rangefilter(dataPath, binaryPath1, filterPath, offsetPath);
-    rf->process_Queries(binaryPath1,queryPath,offsetPath,filterPath,resultPath1);
-
+    run_construct_rangefilter_compare_test(rf, dataPath, binaryPath1, queryPath, filterpath, offsetpath,
+                                         resultpath1, filter_workload, offset_workload, result_workload);
 
     cout << "Ends!" << endl;
     return 0;
