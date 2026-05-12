@@ -245,10 +245,16 @@ void Rfilter::construct_Rangefilter(const char* datapath, const char* binarypath
             bloomFilterMap[i] = rangeids.size();
         }
         else{
-            write_RFbitmap(i);////////////////////////////final page is not writen
+            // 位图尾字节可能仅留在 sdata1；满页已在 write_RFbitmap 内 WriteBlock，未满页的整页刷盘见本函数循环结束处
+            write_RFbitmap(i);
         }
         tuplesintotal.clear();
         fout<<i<<" "<<page_startid[i]<<" "<<page_endid[i]<<" "<<filter_offset[i][0]<<" "<<filter_offset[i][1]<<" "<<filter_offset[i][2]<<" "<<filter_offset[i][3]<<" "<<filter_offset[i][4]<<endl;
+    }
+    // write_RFbitmap 内不再按 last_validchunk 单独刷尾页；布隆亦无尾刷。此处对位图/布隆统一：若缓冲页内仍有未落盘数据则整页写出，避免 filter.txt 短于 offset，且与工作负载路径一致、避免重复写盘。
+    if (beginbyte1 > 0) {
+        block1->WriteBlock(sdata1, fcurpageid++, PAGESIZE);
+        beginbyte1 = 0;
     }
     fout.clear();
     fout.close();
@@ -315,7 +321,7 @@ void Rfilter::construct_Rangefilter(const char* datapath, const char* binarypath
              << filter_offset[i][1] << " " << filter_offset[i][2] << " " << filter_offset[i][3] << " "
              << filter_offset[i][4] << endl;
     }
-    // write_RFbitmap 仅在 chunkid==last_validchunk 时刷尾页；本路径最后写入过滤器的块未必是 last_validchunk，需显式刷盘以免 filter.txt 截断
+    // write_RFbitmap 已不在函数内按 last_validchunk 刷尾页；与工作负载下「最后写 filter 的块未必是 last_validchunk」一致，循环结束后若 beginbyte1>0 则统一整页刷盘（位图/布隆），避免截断或与基线尾刷重复写盘。
     if (beginbyte1 > 0) {
         block1->WriteBlock(sdata1, fcurpageid++, PAGESIZE);
         beginbyte1 = 0; // 整页已落盘，下一过滤器从新区间页内偏移 0 开始（与 block 页式布局一致）
@@ -491,6 +497,7 @@ void Rfilter::write_RFbitmap(int chunkid){
     1.先向当前页fcurpageid写入rfbitmap的前3096B(4096-1000)，写完后，offset=3096，offset1=3096，beginbyte1=0；
     2.fcurpageid++表示新开一页，向该页写入rfbitmap的接下来的4096B，写完后，offset=7192，beginbyte1=0；
     3.fcurpageid++表示再新开一页，向该页写入rfbitmap的最后的2808B(bitmapbytes-offset = 10000-7192 = 2808)，写完后，beginbyte1=2808，表示下一个数据块的rfbitmap开始写入时从该页的第2808B处开始写入
+    未满页的整页刷盘由 construct_Rangefilter 在全部块处理完毕后按 beginbyte1 统一执行，本函数内不再根据 last_validchunk 单独 WriteBlock。
     */
     
     filter_offset[chunkid][0] = 0;///0 represents bitmap as filter
@@ -521,7 +528,6 @@ void Rfilter::write_RFbitmap(int chunkid){
     }
     filter_offset[chunkid][3] = fcurpageid;
     filter_offset[chunkid][4] = beginbyte1;///the next beginning byte
-    if(chunkid==last_validchunk) block1->WriteBlock(sdata1, fcurpageid++, PAGESIZE);
     return;
 }
 ///------------------------------------------------------------------------------------------------------------------------------------------

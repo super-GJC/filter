@@ -78,7 +78,7 @@ g++ -std=c++17 -g -I. BlockManager.cpp Timer.cpp bfilter.cpp rfilter.cpp \
     `(i, page_startid[i], page_endid[i], 2, 0, 0, 0, 0)`，其中 **`filter_offset[i][0] == 2`** 表示未物化过滤器。
   - 若 `i ∈ border_chunk_ids`：与四参数版本相同，读页、`compute_Rangeset`、位图或布隆，并写入 `filter.txt` 与 offset。
   - 构建开始前 **`bloomFilterMap.clear()`**，避免沿用上一次的布隆 `num` 与本次 `filter.txt` 不一致。
-  - **尾页刷盘**：原 `write_RFbitmap` 仅在 `chunkid == last_validchunk` 时对 `sdata1` 做整页 `WriteBlock`；本路径下「最后一个实际写入过滤器的块」未必等于 `last_validchunk`，因此在循环结束后若 **`beginbyte1 > 0`**，再执行一次 `WriteBlock`，避免 `filter_workload.txt` 末尾截断导致查询阶段读错过滤器。
+  - **尾页刷盘**：`write_RFbitmap` 内不再按 `last_validchunk` 单独刷尾页；基线与工作负载路径均在 `construct_Rangefilter` 的循环结束后，若 **`beginbyte1 > 0`** 则对 `sdata1` 做一次整页 `WriteBlock`（位图/布隆统一），避免 `filter.txt` / `filter_workload.txt` 末尾截断，且工作负载下不会出现「`last_validchunk` 内刷一次 + 循环外再刷一次」的重复写盘。
 
 ### `read_Filters` 与类型 2
 
