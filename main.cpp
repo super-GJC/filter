@@ -114,6 +114,29 @@ void run_construct_rangefilter_compare_test(Rfilter* rf, const char* dataPath, c
     rf->construct_Rangefilter(dataPath, binaryPath, filter_workload.c_str(), offset_workload.c_str(), true,
                               border_chunk_set);
     const int workload_materialized_filters = count_materialized_filter_chunks(rf);
+
+    // 校验 append_cursor.txt：filter_workload 已写字节数应等于 fcurpageid*PAGESIZE+beginbyte1（下一字节逻辑偏移）
+    {
+        size_t slash = offset_workload.find_last_of("/\\");
+        string append_cursor_path = (slash == string::npos)
+                                          ? string("append_cursor.txt")
+                                          : offset_workload.substr(0, slash + 1) + "append_cursor.txt";
+        ifstream ac(append_cursor_path);
+        long long cur_page = -1, cur_byte = -1;
+        if (ac >> cur_page >> cur_byte) {
+            long long sz = (long long)file_size_bytes(filter_workload);
+            long long expected_next = cur_page * (long long)PAGESIZE + cur_byte;
+            if (sz == expected_next) {
+                cout << "[append_cursor] OK: filter file size == next write offset (" << sz << " bytes)" << endl;
+            } else {
+                cerr << "[append_cursor] FAIL: file_size=" << sz << " expected fcur*PAGESIZE+begin=" << expected_next
+                     << " (page=" << cur_page << " beginbyte1=" << cur_byte << ")" << endl;
+            }
+        } else {
+            cerr << "[append_cursor] FAIL: could not read " << append_cursor_path << endl;
+        }
+    }
+
     rf->process_Queries(binaryPath, queryPath, offset_workload.c_str(), filter_workload.c_str(),
                         result_workload.c_str());
 

@@ -316,8 +316,19 @@ void Rfilter::construct_Rangefilter(const char* datapath, const char* binarypath
              << filter_offset[i][4] << endl;
     }
     // write_RFbitmap 仅在 chunkid==last_validchunk 时刷尾页；本路径最后写入过滤器的块未必是 last_validchunk，需显式刷盘以免 filter.txt 截断
-    if (beginbyte1 > 0)
+    if (beginbyte1 > 0) {
         block1->WriteBlock(sdata1, fcurpageid++, PAGESIZE);
+        beginbyte1 = 0; // 整页已落盘，下一过滤器从新区间页内偏移 0 开始（与 block 页式布局一致）
+    }
+    // 与 offset 同目录写入 append_cursor.txt：下一过滤器字节应写入的逻辑页号 fcurpageid、页内偏移 beginbyte1（供补建逻辑恢复全局游标）
+    {
+        string off(offsetpath);
+        size_t slash = off.find_last_of("/\\");
+        string cursorpath = (slash == string::npos) ? string("append_cursor.txt") : off.substr(0, slash + 1) + "append_cursor.txt";
+        ofstream fcur_out(cursorpath, ios::out | ios::trunc);
+        if (fcur_out)
+            fcur_out << fcurpageid << " " << beginbyte1 << "\n";
+    }
     fout.clear();
     fout.close();
     return;
