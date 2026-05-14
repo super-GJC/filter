@@ -113,6 +113,9 @@ public:
     void read_Filters(const char* offsetpath, const char* filterpath);///read the filters from file
     int search_RFbitmap(int chunkid, uint64_t arange);///Identify whether a range is empty on rfbitmap
     void get_MulRanges4query(vector<int> aquery, vector<uint64_t> &mranges);
+    /// 类型 2（未建过滤器）时按需补建（重建并落盘）
+    void reconstruct_filter_for_chunk_if_needed(const char* binaryPath, const char* filterPath, const char* offsetPath,
+                                                const char* append_cursor_path, int chunkid);
     void process_Queries(const char* binarypath, const char* querypath, const char* offsetpath, const char* filterpath, const char* resultpath);
 
 

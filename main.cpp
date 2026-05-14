@@ -6,6 +6,8 @@
 #include <fstream>
 #include <sstream>
 #include <unordered_set>
+#include <sys/stat.h>
+#include <cerrno>
 
 
 int subset_num;
@@ -161,6 +163,44 @@ void run_construct_rangefilter_compare_test(Rfilter* rf, const char* dataPath, c
     cout << "[compare] non-empty chunks total (cknum): " << rf->cknum << endl;
 }
 
+/// 基于 query1.txt 的 border 做六参数工作负载构建，再分别对 query1.txt、query2.txt 查询。
+/// 输出放在 climate/run_query1_wl/ 子目录，避免覆盖 climate 根目录下已有 filter/offset/result/append_cursor 等文件。
+void run_query1_workload_build_and_queries(const char* dataPath, const char* binaryPath1, const string& dataf)
+{
+    string query1path = dataf + "query1.txt";
+    string query2path = dataf + "query2.txt";
+    string wlq1_dir = dataf + "run_query1_wl/";
+    if (mkdir(wlq1_dir.c_str(), 0755) != 0 && errno != EEXIST) {
+        cerr << "[run_query1_wl] mkdir failed: " << wlq1_dir << " errno=" << errno << endl;
+    } else {
+        string filter_wlq1 = wlq1_dir + "filter.txt";
+        string offset_wlq1 = wlq1_dir + "offset.txt";
+        string result_wlq1_q1 = wlq1_dir + "result_query1.txt";
+        string result_wlq1_q2 = wlq1_dir + "result_query2.txt";
+
+        Rfilter* rfWlq1 = new Rfilter();
+        rfWlq1->transfer_Txt_ToBinaryfile(dataPath, binaryPath1);
+        vector<int> border_q1 = collectBorderChunkIdsFromQueries(*rfWlq1, query1path.c_str());
+        unordered_set<int> border_q1_set(border_q1.begin(), border_q1.end());
+        for (auto it = border_q1_set.begin(); it != border_q1_set.end();) {
+            if (rfWlq1->chunksize[*it] == 0)
+                it = border_q1_set.erase(it);
+            else
+                ++it;
+        }
+        rfWlq1->construct_Rangefilter(dataPath, binaryPath1, filter_wlq1.c_str(), offset_wlq1.c_str(), true,
+                                      border_q1_set);
+        rfWlq1->process_Queries(binaryPath1, query1path.c_str(), offset_wlq1.c_str(), filter_wlq1.c_str(),
+                                result_wlq1_q1.c_str());
+        rfWlq1->process_Queries(binaryPath1, query2path.c_str(), offset_wlq1.c_str(), filter_wlq1.c_str(),
+                                result_wlq1_q2.c_str());
+        delete rfWlq1;
+        cout << "[run_query1_wl] filter/offset/append_cursor -> " << wlq1_dir << endl;
+        cout << "[run_query1_wl] result query1 -> " << result_wlq1_q1 << endl;
+        cout << "[run_query1_wl] result query2 -> " << result_wlq1_q2 << endl;
+    }
+}
+
 
 int main()
 {
@@ -216,12 +256,14 @@ int main()
 
 
 
-    Rfilter* rf = new Rfilter();
+    run_query1_workload_build_and_queries(dataPath, binaryPath1, dataf);
+
+    // Rfilter* rf = new Rfilter();
     // rf->construct_Rangefilter(dataPath, binaryPath1, filterpath, offsetpath);
     // rf->process_Queries(binaryPath1, queryPath, offsetpath, filterpath, resultpath1);
 
-    run_construct_rangefilter_compare_test(rf, dataPath, binaryPath1, queryPath, filterpath, offsetpath,
-                                         resultpath1, filter_workload, offset_workload, result_workload);
+    // run_construct_rangefilter_compare_test(rf, dataPath, binaryPath1, queryPath, filterpath, offsetpath,
+    //                                      resultpath1, filter_workload, offset_workload, result_workload);
 
     cout << "Ends!" << endl;
     return 0;

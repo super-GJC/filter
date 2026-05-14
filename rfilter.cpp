@@ -632,6 +632,189 @@ void Rfilter::read_Filters(const char* offsetpath, const char* filterpath){///re
     return;
 }
 ///------------------------------------------------------------------------------------------------------------------------------------------
+void Rfilter::reconstruct_filter_for_chunk_if_needed(const char* binaryPath, const char* filterPath, const char* offsetPath,
+                                               const char* append_cursor_path, int chunkid) {
+    /// 与 construct_Rangefilter 中路径形参命名一致，便于对照构建逻辑
+    const char* binarypath = binaryPath;
+    const char* filterpath = filterPath;
+    const char* offsetpath = offsetPath;
+
+    int i, j, k, g;
+    int currentid;
+    if (chunkid < 0 || chunkid >= chunknum)
+        return;
+    if (chunksize[chunkid] == 0)
+        return;
+    if (filter_offset[chunkid][0] != 2)
+        return;
+    i = chunkid;
+
+    // 补建：若本进程尚未执行过 construct_Rangefilter 内的 compute_Total1Drange，则 oneDrange 各维长度不足，须先补算（与四/六参数版本在打开 block 之后、按块循环之前一致）
+    {
+        int need_1d = 0;
+        for (k = 0; k < m; k++) {
+            if ((int)oneDrange[k].size() != logical_size[k]) {
+                need_1d = 1;
+                break;
+            }
+        }
+        if (need_1d)
+            compute_Total1Drange();
+    }
+
+    // 补建：从 append_cursor.txt 恢复全局追加游标 fcurpageid / beginbyte1（与六参数 construct_Rangefilter 末尾写入的语义一致）；若无游标文件则按 filter.txt 当前字节长度推断下一写入位置
+    string cursorpath;
+    if (append_cursor_path && append_cursor_path[0])
+        cursorpath = append_cursor_path;
+    else {
+        string off(offsetpath);
+        size_t slash = off.find_last_of("/\\");
+        cursorpath = (slash == string::npos) ? string("append_cursor.txt") : off.substr(0, slash + 1) + "append_cursor.txt";
+    }
+    ifstream fcur_in(cursorpath);
+    if (fcur_in >> fcurpageid >> beginbyte1) {
+        ;
+    } else {
+        fcur_in.close();
+        ifstream fsize(filterpath, ios::binary | ios::ate);
+        if (!fsize)
+            return;
+        streamoff sz = fsize.tellg();
+        if (sz < 0)
+            return;
+        fcurpageid = (int)(sz / (streamoff)PAGESIZE);
+        beginbyte1 = (int)(sz % (streamoff)PAGESIZE);
+    }
+    fcur_in.close();
+
+    // 补建：追加写 filter 前须让 block1 指向当前 filterpath；若游标落在页内非 0 偏移，须先把该逻辑页从磁盘读入 sdata1，后续 write_RFbitmap / write_Bloomfilter 中的 strmncpy 才能与盘上已有尾部拼接
+    if (block1 != nullptr) {
+        delete block1;
+        block1 = nullptr;
+    }
+    block1 = new BlockManager(filterpath, O_CREAT, PAGESIZE);
+    if (beginbyte1 > 0) {
+        if (block1->ReadBlock(sdata1, (uint64_t)fcurpageid, PAGESIZE) != SUCCESS)
+            return;
+    } else
+        sdata1[0] = '\0';
+
+    BlockManager* block = new BlockManager(binarypath, O_CREAT, PAGESIZE);
+    vector<vector<int>> tuples;
+    vector<vector<int>> tuplesintotal;
+
+    currentid = page_startid[i];
+    for (g = page_startid[i]; g <= page_endid[i]; g++) {
+        read_Page(block, g, tuples);
+        tuplesintotal.insert(tuplesintotal.end(), tuples.begin(), tuples.end());
+        tuples.clear();
+    }
+    delete block;
+
+    ///compute range-set (multidimensional ranges) and construct range filter
+    vector<uint64_t> rangeids;
+    compute_Rangeset(i, tuplesintotal, rangeids);
+    if (allmranges / rangeids.size() >= bitsperkey) {
+        Bfilter* bf = new Bfilter(rangeids.size());
+        bf->construct_Bloomfilter(i, rangeids);
+        bloomFilterMap[i] = rangeids.size();
+    } else {
+        write_RFbitmap(i);
+    }
+    tuplesintotal.clear();
+
+    // write_RFbitmap 内不再按 last_validchunk 单独刷尾页；布隆亦无尾刷。此处对位图/布隆统一：若缓冲页内仍有未落盘数据则整页写出（与四参数、六参数 construct_Rangefilter 循环结束处一致）
+    if (beginbyte1 > 0) {
+        block1->WriteBlock(sdata1, fcurpageid++, PAGESIZE);
+        beginbyte1 = 0;
+    }
+
+    // 补建：read_Filters 对类型 2 未读入字节，filters[i] 仍为空；此处按更新后的 filter_offset[i][*] 从磁盘拼出与 read_Filters 相同的 string，供本次 process_Queries 内 search_* 使用
+    {
+        sdata[0] = '\0';
+        int sign = 0;
+        int length = 0, offset = 0;
+        BlockManager* block = new BlockManager(filterpath, O_CREAT, PAGESIZE);
+        if (filter_offset[i][1] == filter_offset[i][3])
+            length = filter_offset[i][4] - filter_offset[i][2];
+        else {
+            length = PAGESIZE - filter_offset[i][2];
+            for (j = filter_offset[i][1] + 1; j < filter_offset[i][3]; j++)
+                length += PAGESIZE;
+            length += filter_offset[i][4];
+        }
+        char* meta = new char[length];
+        meta[0] = '\0';
+        if (sign == 0)
+            block->ReadBlock(sdata, filter_offset[i][1], PAGESIZE);
+        if (filter_offset[i][1] == filter_offset[i][3]) {
+            strmncpy(sdata, filter_offset[i][2], filter_offset[i][4] - filter_offset[i][2], meta, offset);
+            offset = offset + filter_offset[i][4] - filter_offset[i][2];
+        } else {
+            strmncpy(sdata, filter_offset[i][2], PAGESIZE - filter_offset[i][2], meta, offset);
+            offset = offset + PAGESIZE - filter_offset[i][2];
+            sdata[0] = '\0';
+            for (j = filter_offset[i][1] + 1; j < filter_offset[i][3]; j++) {
+                block->ReadBlock(sdata, j, PAGESIZE);
+                strmncpy(sdata, 0, PAGESIZE, meta, offset);
+                offset += PAGESIZE;
+                sdata[0] = '\0';
+            }
+            block->ReadBlock(sdata, filter_offset[i][3], PAGESIZE);
+            strmncpy(sdata, 0, filter_offset[i][4], meta, offset);
+            sign = 1;
+        }
+        string afilter(meta, meta + length);
+        filters[i] = afilter;
+        delete[] meta;
+        delete block;
+    }
+
+    // 补建：将该块在 offset 文件中的那一行替换为与 construct_Rangefilter 中 fout<<i<<... 相同格式的物化结果（类型 0/1 与五元偏移）；原文件无该行则追加一行
+    {
+        ifstream fin(offsetpath);
+        vector<string> lines;
+        string line;
+        bool replaced = false;
+        while (getline(fin, line)) {
+            if (line.empty())
+                continue;
+            istringstream iss(line);
+            int oid;
+            if (iss >> oid && oid == i) {
+                ostringstream oss;
+                oss << i << " " << page_startid[i] << " " << page_endid[i] << " " << filter_offset[i][0] << " "
+                    << filter_offset[i][1] << " " << filter_offset[i][2] << " " << filter_offset[i][3] << " "
+                    << filter_offset[i][4];
+                lines.push_back(oss.str());
+                replaced = true;
+            } else
+                lines.push_back(line);
+        }
+        fin.close();
+        if (!replaced) {
+            ostringstream oss;
+            oss << i << " " << page_startid[i] << " " << page_endid[i] << " " << filter_offset[i][0] << " "
+                << filter_offset[i][1] << " " << filter_offset[i][2] << " " << filter_offset[i][3] << " "
+                << filter_offset[i][4];
+            lines.push_back(oss.str());
+        }
+        ofstream fout(offsetpath, ios::out | ios::trunc);
+        for (size_t u = 0; u < lines.size(); u++)
+            fout << lines[u] << endl;
+    }
+
+    // 补建：与六参数 construct_Rangefilter 末尾一致，回写 append 游标，供后续补建或 main 中与 filter 文件长度对账
+    {
+        ofstream fcur_out(cursorpath, ios::out | ios::trunc);
+        if (fcur_out)
+            fcur_out << fcurpageid << " " << beginbyte1 << "\n";
+    }
+
+    delete[] rfbitmap;
+    rfbitmap = nullptr;
+}
+
 void Rfilter::process_Queries(const char* binarypath, const char* querypath, const char* offsetpath, const char* filterpath, const char* resultpath){
     int i, j, k, g;
     int lowchunk, highchunk; // lowchunk——与范围查询有重合、需要计算的最低数据块id；highchunk——与范围查询有重合、需要计算的最高数据块id
@@ -648,6 +831,15 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
     ofstream fout(resultpath, ios::out);
     BlockManager* block = new BlockManager(binarypath, O_CREAT, PAGESIZE);
     read_Filters(offsetpath, filterpath);
+    /// 与 offset 同目录的 append 游标路径（与六参数构建写 filter 时一致）
+    string append_cursor_path_str(offsetpath);
+    {
+        size_t slash = append_cursor_path_str.find_last_of("/\\");
+        if (slash == string::npos)
+            append_cursor_path_str = string("append_cursor.txt");
+        else
+            append_cursor_path_str = append_cursor_path_str.substr(0, slash + 1) + "append_cursor.txt";
+    }
     vector<vector<int>> query;
     loadQuery(querypath, query);
     for(i = 0; i < query.size(); i++){
@@ -694,6 +886,9 @@ void Rfilter::process_Queries(const char* binarypath, const char* querypath, con
                 continue;
             }
             borderchunks++;///overlapping border chunks, not considering empty or non-empty-----///
+            if (filter_offset[k][0] == 2) {
+                reconstruct_filter_for_chunk_if_needed(binarypath, filterpath, offsetpath, append_cursor_path_str.c_str(), k);
+            }
             ///search range on the chunk's filter
             for(j = 0; j < m; j++){
                 q[2*j] = max(query[i][2*j], coor[j]*logical_size[j]) - coor[j]*logical_size[j];
