@@ -30,6 +30,8 @@
 |------|------|
 | `collectBorderChunkIds(rf, queries)` | 输入已解析的查询行（每行 `2*m` 个整数，与 `loadQuery` 一致），返回 `vector<int>`（升序、无重复）。 |
 | `collectBorderChunkIdsFromQueries(rf, querypath)` | 从文件路径加载查询后调用上一函数。 |
+| `collectBorderChunkQueryMap(rf, queries)` | 返回 `BorderChunkQueryMap`：`chunk_id → Q_c`（命中该块的查询下标列表，升序无重复）。 |
+| `collectBorderChunkQueryMapFromQueries(rf, querypath)` | 从文件加载查询后调用上一函数。 |
 
 依赖：
 
@@ -59,10 +61,18 @@ g++ -std=c++17 -g -I. BlockManager.cpp Timer.cpp bfilter.cpp rfilter.cpp \
 
 「逐条查询计算 border chunk id，再求并集去重」与 `process_Queries` 按查询独立处理再统计 border 的方式一致，等价于对全负载做并集，**合理且完整**。复杂度约为 `O(查询条数 × 每条查询覆盖的 chunk 数)`；暴力验证为 `O(chunknum × 查询条数)`，仅用于测试。
 
+## Border chunk → Q_c（已实现，层 A）
+
+对每个 border chunk `c`，`Q_c` 为所有满足 `inrange && isborderchunk==1` 的查询下标（与 `process_Queries` 一致）。类型：
+
+- `BorderChunkQueryMap` = `unordered_map<int, vector<int>>`（仅包含 `Q_c` 非空的 chunk）。
+
+自测除与「按 chunk 暴力枚举」逐块比对 `Q_c` 外，会生成 HTML 矩阵报告：`test/output/border_chunk_qc_report.html`（行 = chunk，列 = 查询下标，绿点 = 命中）。
+
 ## 后续可扩展方向（非本模块范围）
 
 - 输出**完全覆盖块**集合（`isborderchunk == 0` 且相交），用于与 border 集合互补；
-- 对每个 border chunk 记录「命中它的查询子集」，用于按负载选择编码维度；
+- 由 `Q_c` 计算每块每维 \(\bar\rho(c,d)\)，用于按负载选择编码维度；
 - 与 `construct_Rangefilter` 衔接：仅对返回的 id 列表构建/writing `filter.txt`。
 
 ---

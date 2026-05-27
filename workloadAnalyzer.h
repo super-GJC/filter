@@ -1,7 +1,11 @@
 #pragma once
+#include <unordered_map>
 #include <vector>
 
 class Rfilter;
+
+/** chunk_id -> 命中该块的查询下标列表 Q_c（升序、无重复；下标与 queries 向量顺序一致） */
+using BorderChunkQueryMap = std::unordered_map<int, std::vector<int>>;
 
 /**
  * 根据查询负载计算「边界块」chunk id 集合（去重、升序）。
@@ -16,3 +20,13 @@ std::vector<int> collectBorderChunkIds(const Rfilter& rf,
 
 std::vector<int> collectBorderChunkIdsFromQueries(const Rfilter& rf,
                                                   const char* querypath);
+
+/**
+ * 对每个 border chunk c，记录 Q_c：所有使 (q,c) 满足 inrange && isborderchunk==1 的查询下标。
+ * 判定与 collectBorderChunkIds / process_Queries 一致；仅包含有至少一条此类查询的 chunk。
+ */
+BorderChunkQueryMap collectBorderChunkQueryMap(const Rfilter& rf,
+                                               const std::vector<std::vector<int>>& queries);
+
+BorderChunkQueryMap collectBorderChunkQueryMapFromQueries(const Rfilter& rf,
+                                                          const char* querypath);
