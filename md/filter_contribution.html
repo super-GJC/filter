@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>维度过滤贡献度 — d₁/d₂ 例子（HTML 图示）</title>
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --card: #fff;
+      --text: #1a1a1a;
+      --muted: #555;
+      --q1: rgba(33, 150, 243, 0.55);
+      --q2: rgba(255, 152, 0, 0.65);
+      --both: rgba(103, 58, 183, 0.72);
+      --grid-line: #ccc;
+      --chunk-border: #333;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      line-height: 1.65;
+      color: var(--text);
+      background: var(--bg);
+      margin: 0;
+      padding: 1.5rem 2rem 3rem;
+      max-width: 960px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1 { font-size: 1.55rem; border-bottom: 2px solid #333; padding-bottom: 0.35rem; }
+    h2 { font-size: 1.2rem; margin-top: 2rem; color: #222; }
+    h3 { font-size: 1.05rem; margin-top: 1.25rem; }
+    p, li { color: #333; }
+    .note {
+      background: #e8f4fd;
+      border-left: 4px solid #2196f3;
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      font-size: 0.95rem;
+    }
+    section.block {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin: 1.25rem 0;
+      box-shadow: 0 1px 6px rgba(0,0,0,.07);
+    }
+    table.data {
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      margin: 1rem 0;
+    }
+    table.data th, table.data td {
+      border: 1px solid #bbb;
+      padding: 0.45rem 0.75rem;
+      text-align: center;
+    }
+    table.data th { background: #e9ecef; }
+    .formula {
+      font-family: "Cambria Math", "Times New Roman", serif;
+      background: #f8f9fa;
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      margin: 0.75rem 0;
+      overflow-x: auto;
+    }
+    .viz-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      align-items: flex-start;
+      margin: 1.25rem 0;
+    }
+    .grid-container {
+      flex: 0 0 auto;
+    }
+    .axis-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .grid-with-axes {
+      display: grid;
+      grid-template-columns: 2rem repeat(16, 1.35rem);
+      grid-template-rows: repeat(16, 1.35rem) 1.5rem;
+      gap: 0;
+      user-select: none;
+    }
+    .corner { grid-column: 1; grid-row: 17; }
+    .col-label {
+      font-size: 0.65rem;
+      text-align: center;
+      color: var(--muted);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 2px;
+    }
+    .row-label {
+      font-size: 0.65rem;
+      text-align: right;
+      padding-right: 4px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .cell {
+      width: 1.35rem;
+      height: 1.35rem;
+      border: 1px solid var(--grid-line);
+      background: #fafafa;
+      position: relative;
+    }
+    .cell.in-q1 { background: var(--q1); }
+    .cell.in-q2 { background: var(--q2); }
+    .cell.in-both { background: var(--both); }
+    .chunk-outline {
+      outline: 2px solid var(--chunk-border);
+      outline-offset: -1px;
+      z-index: 1;
+    }
+    .legend {
+      flex: 1;
+      min-width: 220px;
+      font-size: 0.9rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0.4rem 0;
+    }
+    .swatch {
+      width: 1.25rem;
+      height: 1.25rem;
+      border: 1px solid #999;
+      flex-shrink: 0;
+    }
+    .swatch.q1 { background: var(--q1); }
+    .swatch.q2 { background: var(--q2); }
+    .swatch.both { background: var(--both); }
+    .swatch.none { background: #fafafa; }
+    .conclusion {
+      background: #f0fdf4;
+      border-left: 4px solid #22c55e;
+      padding: 0.75rem 1rem;
+      margin-top: 1rem;
+    }
+    code { background: #eee; padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.9em; }
+    a { color: #1565c0; }
+    .muted { color: var(--muted); font-size: 0.88rem; }
+  </style>
+</head>
+<body>
+
+  <h1>按查询负载评估维度过滤贡献度</h1>
+  <p class="muted">
+    本文档为 <a href="filter_contribution.md">filter_contribution.md</a> 的 <strong>HTML 图示版</strong>，
+    用 16×16 矩阵展示块 <em>c</em> 在 (d₁,d₂) 上的查询区域。Markdown 版中的 ASCII 示意图见原文章节 2–4。
+  </p>
+
+  <section class="block">
+    <h2>1. 重叠比例 ρ（启发式，对应 Markdown 第 3 节）</h2>
+    <p>对 border 块 <em>c</em>、维 <em>d</em>、查询 <em>q</em> ∈ <em>Q<sub>c</sub></em>，将查询裁剪到块内区间 <em>I(q,c,d)</em> 后：</p>
+    <div class="formula">
+      ρ(q,c,d) = |I(q,c,d)| / ℓ<sub>c</sub>(d) &nbsp;&nbsp;（ℓ<sub>c</sub> 为块在该维上的点数，本例为 16）
+    </div>
+    <ul>
+      <li><strong>ρ 越大</strong>：查询在该维块内越宽 → 该维对过滤器判别力越弱 → <strong>越优先从编码维度中剔除</strong>。</li>
+      <li><strong>ρ 越小</strong>：存在强选择性查询 → <strong>越应保留</strong>该维。</li>
+    </ul>
+    <p>块级平均：<strong>ρ̄(c,d) = (1/|Q<sub>c</sub>|) Σ<sub>q∈Q<sub>c</sub></sub> ρ(q,c,d)</strong>，用于对维度排序。</p>
+  </section>
+
+  <section class="block">
+    <h2>2. 例子设定（对应 Markdown 第 4.1 节）</h2>
+    <ul>
+      <li>块 <em>c</em> 在 <strong>d₁</strong>、<strong>d₂</strong> 上取值均为 <code>[0,15]</code>，故平面区域为 16×16 个点（下图每一格 = 一个整数坐标 (d₁,d₂)）。</li>
+      <li><strong>q₁</strong>：d₁ ∈ [0,14]，d₂ ∈ [0,15]（在 d₂ 方向拉满，d₁ 缺右端点 15）。</li>
+      <li><strong>q₂</strong>：d₁ ∈ [0,14]，d₂ ∈ [0,1]（在 d₁ 上与 q₁ 同宽，在 d₂ 上仅为底部窄条）。</li>
+      <li><em>Q<sub>c</sub> = {q₁, q₂}</em>（两条查询均使该块为 border 且走过滤器）。</li>
+    </ul>
+  </section>
+
+  <section class="block">
+    <h2>3. 二维查询区域（16×16 矩阵）</h2>
+    <p>
+      横轴为 <strong>d₁</strong>（列 0…15），纵轴为 <strong>d₂</strong>（行：自上而下为 15…0，与 Markdown 中「d₂ 向上」一致）。
+      深色描边为块 <em>c</em> 的完整范围 [0,15]²。
+    </p>
+
+    <div class="viz-wrap">
+      <div class="grid-container">
+        <div class="grid-with-axes" id="matrix-grid" aria-label="16乘16查询区域矩阵"></div>
+        <p class="axis-label" style="grid-column: 2 / -1; margin-top: 0.25rem;">d₁ →</p>
+      </div>
+      <div class="legend">
+        <h3 style="margin-top:0;">图例</h3>
+        <div class="legend-item"><span class="swatch q1"></span> 仅 <strong>q₁</strong> 覆盖（蓝）</div>
+        <div class="legend-item"><span class="swatch q2"></span> 仅 <strong>q₂</strong> 覆盖（橙）</div>
+        <div class="legend-item"><span class="swatch both"></span> <strong>q₁ ∩ q₂</strong> 同时覆盖（紫）</div>
+        <div class="legend-item"><span class="swatch none"></span> 块内但两条查询均未覆盖（本例无）</div>
+        <p class="muted" style="margin-top:0.75rem;">
+          q₁ 覆盖 15×16 点（缺 d₁=15 的一列）；q₂ 覆盖 15×2 点（d₂=0,1 的底行两条带）。
+          交集为 q₂ 的整个区域（紫）。
+        </p>
+      </div>
+    </div>
+
+    <p class="axis-label" style="text-align:left; margin-left: 2rem;">↑ d₂（行标为左侧数字）</p>
+
+    <h3>3.1 从图上读 d₁ / d₂ 的差异</h3>
+    <ul>
+      <li><strong>d₁ 方向</strong>：q₁、q₂ 的着色列范围相同（均为列 0–14），两条查询在 d₁ 上都「几乎铺满」块宽 → 该维选择性弱。</li>
+      <li><strong>d₂ 方向</strong>：q₁ 占满全部行；q₂ 仅占最下方两行（d₂=0,1）→ d₂ 对 q₂ 有强判别力，不宜优先剔除。</li>
+    </ul>
+  </section>
+
+  <section class="block">
+    <h2>4. 逐维 ρ 与 ρ̄（对应 Markdown 第 4.2–4.3 节）</h2>
+    <table class="data">
+      <thead>
+        <tr>
+          <th>查询</th>
+          <th>I(q,c,d₁)</th>
+          <th>ρ(q,c,d₁)</th>
+          <th>I(q,c,d₂)</th>
+          <th>ρ(q,c,d₂)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>q₁</td>
+          <td>[0,14]，长 15</td>
+          <td>15/16</td>
+          <td>[0,15]，长 16</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td>q₂</td>
+          <td>[0,14]，长 15</td>
+          <td>15/16</td>
+          <td>[0,1]，长 2</td>
+          <td>2/16 = 1/8</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="formula">
+      ρ̄(c,d₁) = (15/16 + 15/16) / 2 = <strong>15/16 ≈ 0.94</strong><br/>
+      ρ̄(c,d₂) = (1 + 1/8) / 2 = <strong>9/16 ≈ 0.56</strong>
+    </div>
+
+    <div class="conclusion">
+      <strong>结论：</strong>因 ρ̄(c,d₁) &gt; ρ̄(c,d₂)，<strong>d₁ 更适合优先从块 c 的过滤器编码维度中剔除</strong>；
+      若先删 d₂，q₂ 在 d₂ 上的窄区间 [0,1] 无法再参与多维范围 ID 的区分，<strong>FPR 更可能明显上升</strong>。
+      另：ρ<sub>min</sub>(c,d₂)=1/8 也提示 d₂ 不宜草率删除（见 Markdown 第 6 节）。
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>5. 与极端满覆盖情形的对照（Markdown 第 2 节）</h2>
+    <p>
+      在 <strong>d₁</strong> 上，两条查询都缺 d₁=15 一点，ρ=15/16，接近「满覆盖」极端：删 d₁ 主要增加假阳性，一般不引入假阴性（在投影语义正确时）。
+      在 <strong>d₂</strong> 上，q₁ 满覆盖而 q₂ 极窄，<strong>不能</strong> 用「平均很宽」忽视 q₂——这正是引入 ρ̄ 与 ρ<sub>min</sub> 的原因。
+    </p>
+  </section>
+
+  <p class="muted" style="margin-top:2rem;">
+    生成说明：坐标 (d₁,d₂) 与块内裁剪一致；矩阵由页面内脚本绘制，便于对照
+    <a href="filter_contribution.md">filter_contribution.md</a> 第 4 节。
+  </p>
+
+  <script>
+    (function () {
+      const N = 16;
+      const container = document.getElementById("matrix-grid");
+
+      // q1: d1 in [0,14], d2 in [0,15]
+      // q2: d1 in [0,14], d2 in [0,1]
+      function inQ1(d1, d2) {
+        return d1 >= 0 && d1 <= 14 && d2 >= 0 && d2 <= 15;
+      }
+      function inQ2(d1, d2) {
+        return d1 >= 0 && d1 <= 14 && d2 >= 0 && d2 <= 1;
+      }
+
+      // 左上角空角
+      const corner = document.createElement("div");
+      corner.className = "corner";
+      container.appendChild(corner);
+
+      // 列标 d1 = 0..15
+      for (let d1 = 0; d1 < N; d1++) {
+        const lab = document.createElement("div");
+        lab.className = "col-label";
+        lab.style.gridColumn = String(d1 + 2);
+        lab.style.gridRow = String(N + 1);
+        lab.textContent = d1 % 4 === 0 || d1 === 15 ? d1 : "";
+        container.appendChild(lab);
+      }
+
+      // 行：屏幕从上到下 d2 = 15 .. 0
+      for (let row = 0; row < N; row++) {
+        const d2 = N - 1 - row;
+        const rowLab = document.createElement("div");
+        rowLab.className = "row-label";
+        rowLab.style.gridColumn = "1";
+        rowLab.style.gridRow = String(row + 1);
+        rowLab.textContent = d2 % 4 === 0 || d2 === 15 ? d2 : "";
+        container.appendChild(rowLab);
+
+        for (let d1 = 0; d1 < N; d1++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.style.gridColumn = String(d1 + 2);
+          cell.style.gridRow = String(row + 1);
+          cell.title = "d1=" + d1 + ", d2=" + d2;
+
+          const q1 = inQ1(d1, d2);
+          const q2 = inQ2(d1, d2);
+          if (q1 && q2) cell.classList.add("in-both");
+          else if (q1) cell.classList.add("in-q1");
+          else if (q2) cell.classList.add("in-q2");
+
+          if (d1 >= 0 && d1 <= 15 && d2 >= 0 && d2 <= 15)
+            cell.classList.add("chunk-outline");
+
+          container.appendChild(cell);
+        }
+      }
+    })();
+  </script>
+</body>
+</html>

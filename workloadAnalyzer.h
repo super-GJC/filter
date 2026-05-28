@@ -30,3 +30,32 @@ BorderChunkQueryMap collectBorderChunkQueryMap(const Rfilter& rf,
 
 BorderChunkQueryMap collectBorderChunkQueryMapFromQueries(const Rfilter& rf,
                                                           const char* querypath);
+
+/**
+ * 单个 border chunk 在 Q_c 负载下的各维 ρ 统计（与 queries 维度数 m 等长）。
+ * rho_bar[d] = (1/|Q_c|) * sum_{q in Q_c} rho(q,c,d)
+ * rho_min[d] = min_{q in Q_c} rho(q,c,d)
+ * 其中 rho(q,c,d) = |I(q,c,d)| / ell_c(d)，I 为查询值域与块值域 [L_c,H_c] 的交集（与 process_Queries 裁剪一致）。
+ */
+struct BorderChunkRhoProfile {
+    std::vector<double> rho_bar;
+    std::vector<double> rho_min;
+};
+
+/** chunk_id -> 该块各维 rho_bar / rho_min（仅含 collectBorderChunkQueryMap 中的 border chunk） */
+using BorderChunkRhoMap = std::unordered_map<int, BorderChunkRhoProfile>;
+
+/**
+ * 在已有 Q_c 上计算每个 border chunk 的 rho_bar、rho_min。
+ * qc_map 须与 queries 对应（通常为 collectBorderChunkQueryMap 的返回值）。
+ */
+BorderChunkRhoMap computeBorderChunkRhoStats(const Rfilter& rf,
+                                             const BorderChunkQueryMap& qc_map,
+                                             const std::vector<std::vector<int>>& queries);
+
+/** collectBorderChunkQueryMap + computeBorderChunkRhoStats */
+BorderChunkRhoMap collectBorderChunkRhoStats(const Rfilter& rf,
+                                             const std::vector<std::vector<int>>& queries);
+
+BorderChunkRhoMap collectBorderChunkRhoStatsFromQueries(const Rfilter& rf,
+                                                        const char* querypath);

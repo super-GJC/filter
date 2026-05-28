@@ -32,6 +32,8 @@
 | `collectBorderChunkIdsFromQueries(rf, querypath)` | 从文件路径加载查询后调用上一函数。 |
 | `collectBorderChunkQueryMap(rf, queries)` | 返回 `BorderChunkQueryMap`：`chunk_id → Q_c`（命中该块的查询下标列表，升序无重复）。 |
 | `collectBorderChunkQueryMapFromQueries(rf, querypath)` | 从文件加载查询后调用上一函数。 |
+| `computeBorderChunkRhoStats(rf, qc_map, queries)` | 返回 `BorderChunkRhoMap`（`rho_bar` / `rho_min`  per dim）。 |
+| `collectBorderChunkRhoStats` / `...FromQueries` | 层 A + 层 B。 |
 
 依赖：
 
@@ -69,10 +71,23 @@ g++ -std=c++17 -g -I. BlockManager.cpp Timer.cpp bfilter.cpp rfilter.cpp \
 
 自测除与「按 chunk 暴力枚举」逐块比对 `Q_c` 外，会生成 HTML 矩阵报告：`test/output/border_chunk_qc_report.html`（行 = chunk，列 = 查询下标，绿点 = 命中）。
 
+## Border chunk 各维 ρ 统计（已实现，层 B）
+
+在 `Q_c` 上对每块每维计算 `rho_bar`（平均 \(\bar\rho\)）与 `rho_min`（\(\rho_{\min}\)）。定义与测试见 [rho.md](./rho.md)。
+
+| 符号 | 说明 |
+|------|------|
+| `BorderChunkRhoProfile` | `rho_bar`、`rho_min`，长度 `m` |
+| `BorderChunkRhoMap` | `chunk_id → BorderChunkRhoProfile` |
+| `computeBorderChunkRhoStats(rf, qc_map, queries)` | 由已有 `BorderChunkQueryMap` 计算 |
+| `collectBorderChunkRhoStats` / `...FromQueries` | 层 A + 层 B 一站式 |
+
+自测：`test/workload_rho_test.cpp`；HTML（climate 全部 352 块）：`test/output/border_chunk_rho_report.html`、`test/output/rho_report.html`。
+
 ## 后续可扩展方向（非本模块范围）
 
 - 输出**完全覆盖块**集合（`isborderchunk == 0` 且相交），用于与 border 集合互补；
-- 由 `Q_c` 计算每块每维 \(\bar\rho(c,d)\)，用于按负载选择编码维度；
+- 由 `BorderChunkRhoMap` 导出每块维度掩码 \(S_c\)，接入 `construct_Rangefilter` 子集维投影（思路见 [filter_contribution.md](./filter_contribution.md)）；
 - 与 `construct_Rangefilter` 衔接：仅对返回的 id 列表构建/writing `filter.txt`。
 
 ---
