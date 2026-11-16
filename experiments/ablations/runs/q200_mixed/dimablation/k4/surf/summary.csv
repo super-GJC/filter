@@ -1,0 +1,3 @@
+method,workload,n_queries,avg_fpr,median_fpr,avg_filter_time_s,avg_process_time_s,filter_bytes,notes
+surf_1d_and,k4,200,0.578666,0.566559,6.48436e-05,7.55765e-07,1004853,real_suffix=8; nan_fpr=6
+surf_1d_best,k4,200,0.598742,0.626696,2.25107e-05,6.7208e-07,255666,real_suffix=8; nan_fpr=6; best_dim=auto

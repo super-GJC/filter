@@ -1,0 +1,18 @@
+[surf_adapter] m=4 chunknum=4096
+[surf_adapter] data=./data/test/climate/data.txt
+[surf_adapter] query=./experiments/workloads/climate_q200/query.txt
+[surf_adapter] out=experiments/runs/20261110_surf_suffix_vs_md_bpk_climate_q200/raw/suffix_0
+[surf_adapter] tuples=1459 queries=200 workload=climate_q200
+[surf_adapter] nonempty_chunks=319
+[surf_adapter] built_filters_on_chunks=319 all_dims=1 real_suffix=0
+[surf_adapter] surf_1d_and queries 50/200
+[surf_adapter] surf_1d_and queries 100/200
+[surf_adapter] surf_1d_and queries 150/200
+[surf_adapter] surf_1d_and queries 200/200
+[surf_adapter] wrote experiments/runs/20261110_surf_suffix_vs_md_bpk_climate_q200/raw/suffix_0/result_and.txt avg_fpr=0.216382 median_fpr=0.166667 filter_bytes=994061
+[surf_adapter] surf_1d_best queries 50/200
+[surf_adapter] surf_1d_best queries 100/200
+[surf_adapter] surf_1d_best queries 150/200
+[surf_adapter] surf_1d_best queries 200/200
+[surf_adapter] wrote experiments/runs/20261110_surf_suffix_vs_md_bpk_climate_q200/raw/suffix_0/result_best.txt avg_fpr=0.240251 median_fpr=0.180195 filter_bytes=252578
+[surf_adapter] done

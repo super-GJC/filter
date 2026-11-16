@@ -1,0 +1,1 @@
+climate_surf_bench: ../SuRF/include/suffix.hpp:30: surf::BitvectorSuffix::BitvectorSuffix(surf::SuffixType, surf::level_t, surf::level_t, const std::vector<std::vector<long unsigned int> >&, const std::vector<unsigned int>&, surf::level_t, surf::level_t): Assertion `(hash_suffix_len + real_suffix_len) <= kWordSize' failed.

@@ -1,0 +1,9 @@
+study,variant,description,avg_overall_selectivity,avg_cov_dim0,avg_cov_dim1,avg_cov_dim2,avg_cov_dim3
+dimablation,k1,constrained=dim1,0.323724,1.0000,0.3237,1.0000,1.0000
+dimablation,k2,constrained=dim1 dim2,0.0873689,1.0000,0.3237,0.2671,1.0000
+dimablation,k3,constrained=dim1 dim2 dim3,0.0487982,1.0000,0.3237,0.2671,0.5521
+dimablation,k4,constrained=dim1 dim2 dim3 dim0,0.0192902,0.3975,0.3237,0.2671,0.5521
+selectivity,m0p5,multiplier=0.50,0.00179027,0.2838,0.1619,0.1336,0.2871
+selectivity,m1p0,multiplier=1.00,0.0192902,0.3975,0.3237,0.2671,0.5521
+selectivity,m2p0,multiplier=2.00,0.214307,0.7275,0.6399,0.5343,0.8329
+selectivity,m4p0,multiplier=4.00,0.75715,1.0000,0.8898,0.8626,0.9786

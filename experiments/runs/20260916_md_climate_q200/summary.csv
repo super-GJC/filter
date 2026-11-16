@@ -1,0 +1,2 @@
+method,workload,n_queries,avg_fpr,median_fpr,avg_filter_time_s,avg_process_time_s,filter_bytes,n_fpr_finite,n_fpr_eq_0,frac_fpr_eq_0,notes
+md,climate_q200,200,0.00287135,0,0.00024453,0.0052541,2613248,200,189,0.945,本机重跑; 原始输出在 raw/; filter_workload=2584576B

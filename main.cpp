@@ -202,9 +202,48 @@ void run_query1_workload_build_and_queries(const char* dataPath, const char* bin
 }
 
 
-int main()
+static vector<int> parse_int_list(const string& s) {
+    vector<int> out;
+    string cur;
+    for (char ch : s) {
+        if (ch == ',' || ch == ' ') {
+            if (!cur.empty()) { out.push_back(stoi(cur)); cur.clear(); }
+        } else {
+            cur.push_back(ch);
+        }
+    }
+    if (!cur.empty()) out.push_back(stoi(cur));
+    return out;
+}
+
+int main(int argc, char** argv)
 {
     int i;
+    // 可覆盖的实验参数（默认即当前主实验）。便于 chunk 大小 / bits per key 敏感性扫描，无需改源码。
+    string data_dir = "./data/test/climate/";
+    string workload_dir = "./experiments/workloads/climate_q200/";
+    string run_dir = "./experiments/runs/20260916_md_climate_q200/raw/";
+    for (int a = 1; a < argc; a++) {
+        const string k = argv[a];
+        auto need = [&](const char* name) -> string {
+            if (a + 1 >= argc) { cerr << "missing value for " << name << endl; exit(2); }
+            return string(argv[++a]);
+        };
+        if (k == "--logical-size") logical_size = parse_int_list(need("--logical-size"));
+        else if (k == "--bitsperkey") bitsperkey = stoi(need("--bitsperkey"));
+        else if (k == "--data-dir") data_dir = need("--data-dir");
+        else if (k == "--workload-dir") workload_dir = need("--workload-dir");
+        else if (k == "--run-dir") run_dir = need("--run-dir");
+        else { cerr << "unknown arg: " << k << endl; exit(2); }
+    }
+    if ((int)logical_size.size() != (int)d.size()) {
+        cerr << "--logical-size needs " << d.size() << " ints" << endl;
+        return 2;
+    }
+    cout << "[main] logical_size=";
+    for (int x : logical_size) cout << x << ' ';
+    cout << " bitsperkey=" << bitsperkey << endl;
+
     sdata1 = new char[PAGESIZE];
     for(i = 0; i < d.size(); i++){
         logical_size0.push_back((int)pow(ceil(sqrt(logical_size[i])), 2));
@@ -220,50 +259,61 @@ int main()
         empty_tuple.push_back(0); // 问题：使用全部维度都为0的元组作为empty_tuple，是否会与各个维度都为各自值域最小值的元组冲突？
     }
 
-    string dataf = "./data/test/climate/";
+    // ---- 实验路径（默认值已在 main 开头声明；可用 --data-dir/--workload-dir/--run-dir 覆盖）----
+    // 默认：climate + 主负载 climate_q200
+
+    if (mkdir(run_dir.c_str(), 0755) != 0 && errno != EEXIST) {
+        cerr << "[main] mkdir run_dir failed: " << run_dir << " errno=" << errno << endl;
+        return 1;
+    }
+    cout << "[main] data_dir=" << data_dir << endl;
+    cout << "[main] workload_dir=" << workload_dir << endl;
+    cout << "[main] run_dir=" << run_dir << endl;
+
+    // 兼容旧辅助函数（仍指向 data_dir）
+    string dataf = data_dir;
     const char* dataFolder = dataf.c_str();
-    string datapath = dataf + "data.txt";
+
+    string datapath = data_dir + "data.txt";
     const char* dataPath = datapath.c_str();
 
-    string querypath = dataf + "query.txt";
+    string querypath = workload_dir + "query.txt";
     const char* queryPath = querypath.c_str();
 
-    string pointquerypath = dataf + "pointquery.txt";
+    string pointquerypath = data_dir + "pointquery.txt";
     const char* pointqueryPath = pointquerypath.c_str();
 
-    string binarypath1 = dataf + "binary1.txt";
+    // 构建产物与查询结果写入 run_dir（基线 / 工作负载版分开）
+    string binarypath1 = run_dir + "binary1.txt";
     const char* binaryPath1 = binarypath1.c_str();
 
-    string offsetpath = dataf + "offset.txt";
+    string offsetpath = run_dir + "offset.txt";
     const char* offsetPath = offsetpath.c_str();
 
-    string filterpath = dataf + "filter.txt";
+    string filterpath = run_dir + "filter.txt";
     const char* filterPath = filterpath.c_str();
 
-    string resultpath1 = dataf + "result1.txt";
+    string resultpath1 = run_dir + "result.txt";
     const char* resultPath1 = resultpath1.c_str();
 
-    // 工作负载构建与基线对比输出（与 query.txt 对应）；基线仍写入 result1.txt
-    string result_workload = dataf + "result_workload.txt";
-    string offset_workload = dataf + "offset_workload.txt";
-    string filter_workload = dataf + "filter_workload.txt";
+    string result_workload = run_dir + "result_workload.txt";
+    string offset_workload = run_dir + "offset_workload.txt";
+    string filter_workload = run_dir + "filter_workload.txt";
 
-    string resultpath2 = dataf + "result2.txt";
+    string resultpath2 = run_dir + "result2.txt";
     const char* resultPath2 = resultpath2.c_str();
 
-    string outputpath = dataf + "output.txt";
+    string outputpath = run_dir + "output.txt";
     const char* outputPath = outputpath.c_str();
 
+    // run_query1_workload_build_and_queries(dataPath, binaryPath1, dataf);
 
+    Rfilter* rf = new Rfilter();
+    // rf->construct_Rangefilter(dataPath, binaryPath1, filterPath, offsetPath);
+    // rf->process_Queries(binaryPath1, queryPath, offsetPath, filterPath, resultPath1);
 
-    run_query1_workload_build_and_queries(dataPath, binaryPath1, dataf);
-
-    // Rfilter* rf = new Rfilter();
-    // rf->construct_Rangefilter(dataPath, binaryPath1, filterpath, offsetpath);
-    // rf->process_Queries(binaryPath1, queryPath, offsetpath, filterpath, resultpath1);
-
-    // run_construct_rangefilter_compare_test(rf, dataPath, binaryPath1, queryPath, filterpath, offsetpath,
-                                        //  resultpath1, filter_workload, offset_workload, result_workload);
+    run_construct_rangefilter_compare_test(rf, dataPath, binaryPath1, queryPath, filterpath, offsetpath,
+                                         resultpath1, filter_workload, offset_workload, result_workload);
 
     cout << "Ends!" << endl;
     return 0;

@@ -1,1 +1,13 @@
-test/workload_analyzer_test
+
+*.o
+*.obj
+
+# bench: SuRF adapter 可执行文件（build.sh 产物）
+bench/surf_1d/adapter/climate_surf_bench
+
+# C/C++ generic build dirs
+build/
+
+# Python cache
+__pycache__/
+*.pyc

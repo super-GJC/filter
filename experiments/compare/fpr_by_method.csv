@@ -1,0 +1,10 @@
+method,workload,n_queries,avg_fpr,median_fpr,n_fpr_finite,n_fpr_eq_0,frac_fpr_eq_0,run_id
+md,climate_q200,200,0.00287135,0,200,189,0.945,20260916_md_climate_q200
+surf_1d_and,climate_q200,200,0.211607,0.163334,200,40,0.2,20260917_surf_1d_and_climate_q200
+surf_1d_best,climate_q200,200,0.239521,0.180195,200,34,0.17,20260917_surf_1d_best_climate_q200
+md,climate_q200_mixed,200,0.365138,0.0714286,179,81,0.452514,20260916_md_climate_q200_mixed
+surf_1d_and,climate_q200_mixed,200,0.578666,0.566559,194,7,0.0360825,20260917_surf_1d_and_climate_q200_mixed
+surf_1d_best,climate_q200_mixed,200,0.598742,0.626696,194,7,0.0360825,20260917_surf_1d_best_climate_q200_mixed
+md,climate_q8,8,0.0220238,0,8,6,0.75,20260914_md_climate_q8
+surf_1d_and,climate_q8,8,0.153942,0.135003,8,3,0.375,20260917_surf_1d_and_climate_q8
+surf_1d_best,climate_q8,8,0.153942,0.135003,8,3,0.375,20260917_surf_1d_best_climate_q8

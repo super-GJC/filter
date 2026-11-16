@@ -1,0 +1,2 @@
+method,workload,n_queries,avg_fpr,median_fpr,avg_filter_time_s,avg_process_time_s,filter_bytes,n_fpr_finite,n_fpr_eq_0,frac_fpr_eq_0,notes
+surf_1d_best,climate_q8,8,0.153942,0.135003,4.17219e-05,1.21725e-06,255666,8,3,0.375,real_suffix=8; best_dim=auto; nan_fpr=0; 本机 SuRF adapter 跑 climate_q8

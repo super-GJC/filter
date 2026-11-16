@@ -1,0 +1,2 @@
+method,workload,n_queries,avg_fpr,median_fpr,avg_filter_time_s,avg_process_time_s,filter_bytes,n_fpr_finite,n_fpr_eq_0,frac_fpr_eq_0,notes
+md,climate_q200_mixed,200,0.365138,0.0714286,0.000339078,0.00350922,2613248,179,81,0.452514,本机运行; 原始输出在 raw/; FPR 统计排除 21 条 chunklist 为空导致的 nan（有效 179 条）; filter_workload=2568192B

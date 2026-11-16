@@ -1,0 +1,2 @@
+method,workload,n_queries,avg_fpr,median_fpr,avg_filter_time_s,avg_process_time_s,filter_bytes,n_fpr_finite,n_fpr_eq_0,frac_fpr_eq_0,notes
+PLACEHOLDER,PLACEHOLDER,,,,,,,,,,

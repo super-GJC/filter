@@ -1,0 +1,2 @@
+method,workload,n_queries,avg_fpr,median_fpr,avg_filter_time_s,avg_process_time_s,filter_bytes,n_fpr_finite,n_fpr_eq_0,frac_fpr_eq_0,notes
+surf_1d_best,climate_q200_mixed,200,0.598742,0.626696,6.01684e-05,1.64389e-06,255666,194,7,0.0360825,real_suffix=8; best_dim=auto; nan_fpr=6; 本机 SuRF adapter 跑 climate_q200_mixed
