@@ -1,4 +1,3 @@
-
 *.o
 *.obj
 
@@ -8,6 +7,20 @@ bench/surf_1d/adapter/climate_surf_bench
 # C/C++ generic build dirs
 build/
 
+# Built binaries at repo root / tests
+/main
+/test/workload_*_test
+
 # Python cache
 __pycache__/
 *.pyc
+
+# Regenerable MD-filter run artifacts (often hundreds of MB)
+**/filter.txt
+**/binary1.txt
+**/filter_workload.txt
+**/offset_workload.txt
+
+# Windows ADS junk copied into WSL
+*Zone.Identifier
+*:Zone.Identifier

@@ -1,0 +1,141 @@
+[11:22:24] KEEP existing md dimablation/k1
+[11:22:24] RUN surf ls=4,4,4,4,4 q=k1
+[11:22:37] OK  surf ls=4,4,4,4,4 q=k1  (13.2s)
+[11:22:37] RUN md ls=4,4,4,4,4 bpk=20 wl=k2
+[11:28:39] OK  md ls=4,4,4,4,4 bpk=20 wl=k2  (361.9s)
+[11:28:39] RUN surf ls=4,4,4,4,4 q=k2
+[11:28:44] OK  surf ls=4,4,4,4,4 q=k2  (5.2s)
+[11:28:44] RUN md ls=4,4,4,4,4 bpk=20 wl=k3
+[11:32:54] OK  md ls=4,4,4,4,4 bpk=20 wl=k3  (250.3s)
+[11:32:54] RUN surf ls=4,4,4,4,4 q=k3
+[11:32:57] OK  surf ls=4,4,4,4,4 q=k3  (2.8s)
+[11:32:57] RUN md ls=4,4,4,4,4 bpk=20 wl=k4
+[11:36:30] OK  md ls=4,4,4,4,4 bpk=20 wl=k4  (212.4s)
+[11:36:30] RUN surf ls=4,4,4,4,4 q=k4
+[11:36:31] OK  surf ls=4,4,4,4,4 q=k4  (1.5s)
+[11:36:31] REUSE archive -> dimablation/k5
+[11:36:31] RUN md ls=4,4,4,4,4 bpk=20 wl=m0p5
+[11:39:31] OK  md ls=4,4,4,4,4 bpk=20 wl=m0p5  (179.9s)
+[11:39:31] RUN surf ls=4,4,4,4,4 q=m0p5
+[11:39:32] OK  surf ls=4,4,4,4,4 q=m0p5  (0.6s)
+[11:39:32] REUSE archive -> selectivity/m1p0
+[11:39:32] RUN md ls=4,4,4,4,4 bpk=20 wl=m2p0
+[11:45:25] OK  md ls=4,4,4,4,4 bpk=20 wl=m2p0  (353.5s)
+[11:45:25] RUN surf ls=4,4,4,4,4 q=m2p0
+[11:45:30] OK  surf ls=4,4,4,4,4 q=m2p0  (5.0s)
+[11:45:30] RUN md ls=4,4,4,4,4 bpk=20 wl=m4p0
+[12:07:27] OK  md ls=4,4,4,4,4 bpk=20 wl=m4p0  (1316.6s)
+[12:07:27] RUN surf ls=4,4,4,4,4 q=m4p0
+[12:07:54] OK  surf ls=4,4,4,4,4 q=m4p0  (27.5s)
+[12:07:54] RUN surf ls=4,4,4,4,4 q=synth_uniform_q1000
+[12:07:55] OK  surf ls=4,4,4,4,4 q=synth_uniform_q1000  (1.0s)
+[12:07:55] RUN md ls=4,4,4,4,4 bpk=4 wl=synth_uniform_q1000
+[12:09:13] OK  md ls=4,4,4,4,4 bpk=4 wl=synth_uniform_q1000  (77.8s)
+[12:09:13] RUN md ls=4,4,4,4,4 bpk=8 wl=synth_uniform_q1000
+[12:10:48] OK  md ls=4,4,4,4,4 bpk=8 wl=synth_uniform_q1000  (94.5s)
+[12:10:48] RUN md ls=4,4,4,4,4 bpk=16 wl=synth_uniform_q1000
+[12:13:02] OK  md ls=4,4,4,4,4 bpk=16 wl=synth_uniform_q1000  (134.3s)
+[12:13:02] RUN md ls=4,4,4,4,4 bpk=18 wl=synth_uniform_q1000
+[12:15:25] OK  md ls=4,4,4,4,4 bpk=18 wl=synth_uniform_q1000  (142.8s)
+[12:15:25] REUSE archive MD for bpk20
+[12:15:25] RUN md ls=4,4,4,4,4 bpk=22 wl=synth_uniform_q1000
+[12:18:12] OK  md ls=4,4,4,4,4 bpk=22 wl=synth_uniform_q1000  (167.0s)
+[12:18:12] RUN md ls=4,4,4,4,4 bpk=24 wl=synth_uniform_q1000
+[12:21:06] OK  md ls=4,4,4,4,4 bpk=24 wl=synth_uniform_q1000  (174.2s)
+[12:21:06] RUN md ls=4,4,4,4,4 bpk=40 wl=synth_uniform_q1000
+[12:25:29] OK  md ls=4,4,4,4,4 bpk=40 wl=synth_uniform_q1000  (262.5s)
+[12:25:29] RUN md ls=2,2,2,2,2 bpk=20 wl=synth_uniform_q1000
+command failed (-11): md ls=2,2,2,2,2 bpk=20 wl=synth_uniform_q1000
+[12:27:23] RUN md ls=2,2,2,2,2 bpk=20 wl=synth_uniform_q1000
+[12:27:37] RUN md ls=2,2,2,2,2 bpk=20 wl=synth_uniform_q1000
+[12:27:57] RUN md ls=2,2,2,2,2 bpk=20 wl=synth_uniform_q1000
+command failed (-9): md ls=2,2,2,2,2 bpk=20 wl=synth_uniform_q1000
+[12:44:59] RUN md ls=2,4,4,4,4 bpk=20 wl=synth_uniform_q1000
+[12:48:18] OK  md ls=2,4,4,4,4 bpk=20 wl=synth_uniform_q1000  (199.2s)
+[12:48:18] RUN surf ls=2,4,4,4,4 q=synth_uniform_q1000
+[12:48:20] OK  surf ls=2,4,4,4,4 q=synth_uniform_q1000  (1.4s)
+[12:48:20] REUSE archive for block mid
+[12:48:20] RUN md ls=4,8,4,4,4 bpk=20 wl=synth_uniform_q1000
+[12:52:00] OK  md ls=4,8,4,4,4 bpk=20 wl=synth_uniform_q1000  (220.1s)
+[12:52:00] RUN surf ls=4,8,4,4,4 q=synth_uniform_q1000
+[12:52:00] OK  surf ls=4,8,4,4,4 q=synth_uniform_q1000  (0.5s)
+[12:52:00] RUN md ls=4,8,8,4,4 bpk=20 wl=synth_uniform_q1000
+[12:57:42] OK  md ls=4,8,8,4,4 bpk=20 wl=synth_uniform_q1000  (341.8s)
+[12:57:42] RUN surf ls=4,8,8,4,4 q=synth_uniform_q1000
+[12:57:43] OK  surf ls=4,8,8,4,4 q=synth_uniform_q1000  (0.4s)
+[12:57:43] DONE stage=blocks
+[13:47:18] AGG wrote /home/gjc/filter/experiments/synthetic_m5_n100k/compare_ext
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:521: UserWarning: Glyph 32422 (\N{CJK UNIFIED IDEOGRAPH-7EA6}) missing from font(s) DejaVu Sans.
+  plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:521: UserWarning: Glyph 26463 (\N{CJK UNIFIED IDEOGRAPH-675F}) missing from font(s) DejaVu Sans.
+  plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:521: UserWarning: Glyph 32500 (\N{CJK UNIFIED IDEOGRAPH-7EF4}) missing from font(s) DejaVu Sans.
+  plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:521: UserWarning: Glyph 25968 (\N{CJK UNIFIED IDEOGRAPH-6570}) missing from font(s) DejaVu Sans.
+  plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:521: UserWarning: Glyph 24179 (\N{CJK UNIFIED IDEOGRAPH-5E73}) missing from font(s) DejaVu Sans.
+  plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:521: UserWarning: Glyph 22343 (\N{CJK UNIFIED IDEOGRAPH-5747}) missing from font(s) DejaVu Sans.
+  plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:522: UserWarning: Glyph 32422 (\N{CJK UNIFIED IDEOGRAPH-7EA6}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "fpr_vs_dimcount.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:522: UserWarning: Glyph 26463 (\N{CJK UNIFIED IDEOGRAPH-675F}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "fpr_vs_dimcount.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:522: UserWarning: Glyph 32500 (\N{CJK UNIFIED IDEOGRAPH-7EF4}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "fpr_vs_dimcount.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:522: UserWarning: Glyph 25968 (\N{CJK UNIFIED IDEOGRAPH-6570}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "fpr_vs_dimcount.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:522: UserWarning: Glyph 24179 (\N{CJK UNIFIED IDEOGRAPH-5E73}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "fpr_vs_dimcount.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:522: UserWarning: Glyph 22343 (\N{CJK UNIFIED IDEOGRAPH-5747}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "fpr_vs_dimcount.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:533: UserWarning: Glyph 21306 (\N{CJK UNIFIED IDEOGRAPH-533A}) missing from font(s) DejaVu Sans.
+  plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:533: UserWarning: Glyph 38388 (\N{CJK UNIFIED IDEOGRAPH-95F4}) missing from font(s) DejaVu Sans.
+  plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:533: UserWarning: Glyph 20493 (\N{CJK UNIFIED IDEOGRAPH-500D}) missing from font(s) DejaVu Sans.
+  plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:533: UserWarning: Glyph 25968 (\N{CJK UNIFIED IDEOGRAPH-6570}) missing from font(s) DejaVu Sans.
+  plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:533: UserWarning: Glyph 24179 (\N{CJK UNIFIED IDEOGRAPH-5E73}) missing from font(s) DejaVu Sans.
+  plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:533: UserWarning: Glyph 22343 (\N{CJK UNIFIED IDEOGRAPH-5747}) missing from font(s) DejaVu Sans.
+  plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:534: UserWarning: Glyph 21306 (\N{CJK UNIFIED IDEOGRAPH-533A}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "fpr_vs_selectivity.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:534: UserWarning: Glyph 38388 (\N{CJK UNIFIED IDEOGRAPH-95F4}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "fpr_vs_selectivity.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:534: UserWarning: Glyph 20493 (\N{CJK UNIFIED IDEOGRAPH-500D}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "fpr_vs_selectivity.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:534: UserWarning: Glyph 25968 (\N{CJK UNIFIED IDEOGRAPH-6570}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "fpr_vs_selectivity.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:534: UserWarning: Glyph 24179 (\N{CJK UNIFIED IDEOGRAPH-5E73}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "fpr_vs_selectivity.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:534: UserWarning: Glyph 22343 (\N{CJK UNIFIED IDEOGRAPH-5747}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "fpr_vs_selectivity.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:556: UserWarning: Glyph 21344 (\N{CJK UNIFIED IDEOGRAPH-5360}) missing from font(s) DejaVu Sans.
+  plt.grid(True, which="both", alpha=0.3); plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:556: UserWarning: Glyph 29992 (\N{CJK UNIFIED IDEOGRAPH-7528}) missing from font(s) DejaVu Sans.
+  plt.grid(True, which="both", alpha=0.3); plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:556: UserWarning: Glyph 31354 (\N{CJK UNIFIED IDEOGRAPH-7A7A}) missing from font(s) DejaVu Sans.
+  plt.grid(True, which="both", alpha=0.3); plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:556: UserWarning: Glyph 38388 (\N{CJK UNIFIED IDEOGRAPH-95F4}) missing from font(s) DejaVu Sans.
+  plt.grid(True, which="both", alpha=0.3); plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:556: UserWarning: Glyph 24179 (\N{CJK UNIFIED IDEOGRAPH-5E73}) missing from font(s) DejaVu Sans.
+  plt.grid(True, which="both", alpha=0.3); plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:556: UserWarning: Glyph 22343 (\N{CJK UNIFIED IDEOGRAPH-5747}) missing from font(s) DejaVu Sans.
+  plt.grid(True, which="both", alpha=0.3); plt.legend(); plt.tight_layout()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:557: UserWarning: Glyph 21344 (\N{CJK UNIFIED IDEOGRAPH-5360}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "space_fpr_scatter.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:557: UserWarning: Glyph 29992 (\N{CJK UNIFIED IDEOGRAPH-7528}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "space_fpr_scatter.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:557: UserWarning: Glyph 31354 (\N{CJK UNIFIED IDEOGRAPH-7A7A}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "space_fpr_scatter.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:557: UserWarning: Glyph 38388 (\N{CJK UNIFIED IDEOGRAPH-95F4}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "space_fpr_scatter.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:557: UserWarning: Glyph 24179 (\N{CJK UNIFIED IDEOGRAPH-5E73}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "space_fpr_scatter.png"), dpi=140); plt.close()
+/home/gjc/filter/experiments/synthetic_m5_n100k/run_doc_study.py:557: UserWarning: Glyph 22343 (\N{CJK UNIFIED IDEOGRAPH-5747}) missing from font(s) DejaVu Sans.
+  plt.savefig(os.path.join(CMP, "space_fpr_scatter.png"), dpi=140); plt.close()
+[13:47:20] plots done
+[13:47:20] DONE stage=aggregate

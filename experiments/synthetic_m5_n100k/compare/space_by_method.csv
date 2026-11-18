@@ -1,0 +1,4 @@
+method,workload,filter_bytes,bits_per_key,run_id
+md,synth_uniform_q100,248197120,20,20261116_md_synth_m5_n100k_q100
+surf_1d_and,synth_uniform_q100,33218266,real_suffix=8,20261116_surf_1d_and_synth_m5_n100k_q100
+surf_1d_best,synth_uniform_q100,6645571,real_suffix=8,20261116_surf_1d_best_synth_m5_n100k_q100

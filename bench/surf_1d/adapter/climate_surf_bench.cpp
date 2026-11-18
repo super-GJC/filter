@@ -476,8 +476,26 @@ void usage() {
         << "  --out DIR\n"
         << "  --mode best|and|both\n"
         << "  --real-suffix N     (default 8; 0 = SuRF kNone)\n"
+        << "  --d a,b,c,d            (default 4,1121,68,7; must match MD)\n"
         << "  --logical-size a,b,c,d  (default 2,16,16,4; must match MD)\n"
         << "  --best-dim auto|N   (default auto = max distinct per chunk)\n";
+}
+
+std::vector<int> parse_int_list(const std::string& v) {
+    std::vector<int> out;
+    std::string cur;
+    for (char ch : v) {
+        if (ch == ',' || ch == ' ') {
+            if (!cur.empty()) {
+                out.push_back(std::stoi(cur));
+                cur.clear();
+            }
+        } else {
+            cur.push_back(ch);
+        }
+    }
+    if (!cur.empty()) out.push_back(std::stoi(cur));
+    return out;
 }
 
 Config parse_args(int argc, char** argv) {
@@ -499,21 +517,13 @@ Config parse_args(int argc, char** argv) {
             c.mode = need("--mode");
         else if (a == "--real-suffix")
             c.real_suffix_len = static_cast<uint32_t>(std::stoul(need("--real-suffix")));
+        else if (a == "--d") {
+            c.d = parse_int_list(need("--d"));
+            if (c.d.empty())
+                throw std::runtime_error("--d must be non-empty");
+        }
         else if (a == "--logical-size") {
-            const std::string v = need("--logical-size");
-            std::vector<int> out;
-            std::string cur;
-            for (char ch : v) {
-                if (ch == ',' || ch == ' ') {
-                    if (!cur.empty()) { out.push_back(std::stoi(cur)); cur.clear(); }
-                } else {
-                    cur.push_back(ch);
-                }
-            }
-            if (!cur.empty()) out.push_back(std::stoi(cur));
-            if (out.size() != c.d.size())
-                throw std::runtime_error("--logical-size needs the same number of ints as d");
-            c.logical_size = out;
+            c.logical_size = parse_int_list(need("--logical-size"));
         }
         else if (a == "--best-dim") {
             const std::string v = need("--best-dim");
@@ -530,6 +540,8 @@ Config parse_args(int argc, char** argv) {
     }
     if (c.mode != "best" && c.mode != "and" && c.mode != "both")
         throw std::runtime_error("--mode must be best|and|both");
+    if (c.logical_size.size() != c.d.size())
+        throw std::runtime_error("--logical-size needs the same number of ints as --d / d");
     return c;
 }
 

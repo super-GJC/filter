@@ -47,17 +47,8 @@ void Rfilter::transfer_Txt_ToBinaryfile(const char* datapath, const char* binary
 
     ///read data the second time, and write the chunks
     //第二轮读取数据文件，是为了将具体的元组写入到对应的数据块chunk中去
-    //FIXME：这种数组的分配方式会在栈上分配空间，在chunknum很大时会发生栈内存溢出。考虑修改成动态分配内存
-    /*
-    栈溢出原因详解：
-    1.buffer数组本身（存储chunknum个vector<vector<int>>对象）在栈上（如果是局部变量）
-    2.每个vector<vector<int>>对象内部，存储vector<int>数组的内存是在堆上
-    3.每个vector<int>对象内部，存储int数组的内存也是在堆上
-    如果chunknum很大，那么数组buffer本身可能会很大（因为每个vector<vector<int>>对象通常为24字节，64位系统）。
-    例如，chunknum=1000000，那么数组buffer的大小为1000000 * 24 = 24MB。这可能会造成栈溢出（如果buffer是局部变量）。
-    所以，通常建议将这样的数组放在堆上，例如使用vector<vector<vector<int>>>或动态分配。
-    */
-    vector<vector<int>> buffer[chunknum];
+    // 堆上分配：chunknum 很大时（如 2^18）栈上 VLA 会 SIGSEGV
+    vector<vector<vector<int>>> buffer(chunknum);
     int beginbyte = 0, beginbit = 0;
     unsigned char c = 0;
     sdata[0] = '\0';
@@ -248,6 +239,9 @@ void Rfilter::construct_Rangefilter(const char* datapath, const char* binarypath
             // 位图尾字节可能仅留在 sdata1；满页已在 write_RFbitmap 内 WriteBlock，未满页的整页刷盘见本函数循环结束处
             write_RFbitmap(i);
         }
+        // 本块位图已写入 filter.txt 或已参与布隆过滤器构造，不再需要 rfbitmap，释放避免累计泄漏
+        delete[] rfbitmap;
+        rfbitmap = nullptr;
         tuplesintotal.clear();
         fout<<i<<" "<<page_startid[i]<<" "<<page_endid[i]<<" "<<filter_offset[i][0]<<" "<<filter_offset[i][1]<<" "<<filter_offset[i][2]<<" "<<filter_offset[i][3]<<" "<<filter_offset[i][4]<<endl;
     }
@@ -316,6 +310,9 @@ void Rfilter::construct_Rangefilter(const char* datapath, const char* binarypath
         } else {
             write_RFbitmap(i);
         }
+        // 本块位图已写入 filter.txt 或已参与布隆过滤器构造，不再需要 rfbitmap，释放避免累计泄漏
+        delete[] rfbitmap;
+        rfbitmap = nullptr;
         tuplesintotal.clear();
         fout << i << " " << page_startid[i] << " " << page_endid[i] << " " << filter_offset[i][0] << " "
              << filter_offset[i][1] << " " << filter_offset[i][2] << " " << filter_offset[i][3] << " "

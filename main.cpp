@@ -223,6 +223,7 @@ int main(int argc, char** argv)
     string data_dir = "./data/test/climate/";
     string workload_dir = "./experiments/workloads/climate_q200/";
     string run_dir = "./experiments/runs/20260916_md_climate_q200/raw/";
+    bool skip_workload = false; // 仅跑基线 construct+query，跳过工作负载版二次构建（批量实验加速）
     for (int a = 1; a < argc; a++) {
         const string k = argv[a];
         auto need = [&](const char* name) -> string {
@@ -230,17 +231,26 @@ int main(int argc, char** argv)
             return string(argv[++a]);
         };
         if (k == "--logical-size") logical_size = parse_int_list(need("--logical-size"));
+        else if (k == "--d") d = parse_int_list(need("--d"));
         else if (k == "--bitsperkey") bitsperkey = stoi(need("--bitsperkey"));
         else if (k == "--data-dir") data_dir = need("--data-dir");
         else if (k == "--workload-dir") workload_dir = need("--workload-dir");
         else if (k == "--run-dir") run_dir = need("--run-dir");
+        else if (k == "--skip-workload") skip_workload = true;
         else { cerr << "unknown arg: " << k << endl; exit(2); }
     }
-    if ((int)logical_size.size() != (int)d.size()) {
-        cerr << "--logical-size needs " << d.size() << " ints" << endl;
+    if (d.empty()) {
+        cerr << "--d must be non-empty" << endl;
         return 2;
     }
-    cout << "[main] logical_size=";
+    M = (int)d.size();
+    if ((int)logical_size.size() != (int)d.size()) {
+        cerr << "--logical-size needs " << d.size() << " ints (same as --d / d)" << endl;
+        return 2;
+    }
+    cout << "[main] d=";
+    for (int x : d) cout << x << ' ';
+    cout << " logical_size=";
     for (int x : logical_size) cout << x << ' ';
     cout << " bitsperkey=" << bitsperkey << endl;
 
@@ -312,8 +322,14 @@ int main(int argc, char** argv)
     // rf->construct_Rangefilter(dataPath, binaryPath1, filterPath, offsetPath);
     // rf->process_Queries(binaryPath1, queryPath, offsetPath, filterPath, resultPath1);
 
-    run_construct_rangefilter_compare_test(rf, dataPath, binaryPath1, queryPath, filterpath, offsetpath,
-                                         resultpath1, filter_workload, offset_workload, result_workload);
+    if (skip_workload) {
+        cout << "[main] --skip-workload: baseline construct+query only" << endl;
+        rf->construct_Rangefilter(dataPath, binaryPath1, filterPath, offsetPath);
+        rf->process_Queries(binaryPath1, queryPath, offsetPath, filterPath, resultPath1);
+    } else {
+        run_construct_rangefilter_compare_test(rf, dataPath, binaryPath1, queryPath, filterpath, offsetpath,
+                                             resultpath1, filter_workload, offset_workload, result_workload);
+    }
 
     cout << "Ends!" << endl;
     return 0;

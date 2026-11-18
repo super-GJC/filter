@@ -1,0 +1,2 @@
+method,workload,n_queries,avg_fpr,median_fpr,avg_filter_time_s,avg_process_time_s,filter_bytes,n_fpr_finite,n_fpr_eq_0,frac_fpr_eq_0,notes
+md,synth_uniform_q100,100,0.0,0.0,0.000596842608,0.0099686785,248197120,100,100,1.0,baseline; bitsperkey=20; logical_size=4,4,4,4,4; d=16,64,32,16,16; M=5 n=100k

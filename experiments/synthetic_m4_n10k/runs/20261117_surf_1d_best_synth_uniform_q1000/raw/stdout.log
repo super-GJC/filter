@@ -1,0 +1,50 @@
+[surf_adapter] m=4 chunknum=2048
+[surf_adapter] data=experiments/synthetic_m4_n10k/datasets/synth_uniform_n10k/data.txt
+[surf_adapter] query=experiments/synthetic_m4_n10k/workloads/synth_uniform_q1000/query.txt
+[surf_adapter] out=/tmp/synth_m4_q1000_surf
+[surf_adapter] tuples=10000 queries=1000 workload=synth_uniform_q1000
+[surf_adapter] nonempty_chunks=2029
+[surf_adapter] built_filters_on_chunks=2029 all_dims=1 real_suffix=8
+[surf_adapter] surf_1d_and queries 50/1000
+[surf_adapter] surf_1d_and queries 100/1000
+[surf_adapter] surf_1d_and queries 150/1000
+[surf_adapter] surf_1d_and queries 200/1000
+[surf_adapter] surf_1d_and queries 250/1000
+[surf_adapter] surf_1d_and queries 300/1000
+[surf_adapter] surf_1d_and queries 350/1000
+[surf_adapter] surf_1d_and queries 400/1000
+[surf_adapter] surf_1d_and queries 450/1000
+[surf_adapter] surf_1d_and queries 500/1000
+[surf_adapter] surf_1d_and queries 550/1000
+[surf_adapter] surf_1d_and queries 600/1000
+[surf_adapter] surf_1d_and queries 650/1000
+[surf_adapter] surf_1d_and queries 700/1000
+[surf_adapter] surf_1d_and queries 750/1000
+[surf_adapter] surf_1d_and queries 800/1000
+[surf_adapter] surf_1d_and queries 850/1000
+[surf_adapter] surf_1d_and queries 900/1000
+[surf_adapter] surf_1d_and queries 950/1000
+[surf_adapter] surf_1d_and queries 1000/1000
+[surf_adapter] wrote /tmp/synth_m4_q1000_surf/result_and.txt avg_fpr=0.295742 median_fpr=0.294786 filter_bytes=6555527
+[surf_adapter] surf_1d_best queries 50/1000
+[surf_adapter] surf_1d_best queries 100/1000
+[surf_adapter] surf_1d_best queries 150/1000
+[surf_adapter] surf_1d_best queries 200/1000
+[surf_adapter] surf_1d_best queries 250/1000
+[surf_adapter] surf_1d_best queries 300/1000
+[surf_adapter] surf_1d_best queries 350/1000
+[surf_adapter] surf_1d_best queries 400/1000
+[surf_adapter] surf_1d_best queries 450/1000
+[surf_adapter] surf_1d_best queries 500/1000
+[surf_adapter] surf_1d_best queries 550/1000
+[surf_adapter] surf_1d_best queries 600/1000
+[surf_adapter] surf_1d_best queries 650/1000
+[surf_adapter] surf_1d_best queries 700/1000
+[surf_adapter] surf_1d_best queries 750/1000
+[surf_adapter] surf_1d_best queries 800/1000
+[surf_adapter] surf_1d_best queries 850/1000
+[surf_adapter] surf_1d_best queries 900/1000
+[surf_adapter] surf_1d_best queries 950/1000
+[surf_adapter] surf_1d_best queries 1000/1000
+[surf_adapter] wrote /tmp/synth_m4_q1000_surf/result_best.txt avg_fpr=0.412037 median_fpr=0.416026 filter_bytes=1645400
+[surf_adapter] done

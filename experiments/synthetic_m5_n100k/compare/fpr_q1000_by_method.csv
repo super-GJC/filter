@@ -1,0 +1,4 @@
+method,workload,n_queries,avg_fpr,median_fpr,max_fpr,n_fpr_eq_0,frac_fpr_eq_0,filter_bytes,run_id
+md,synth_uniform_q1000,1000,4.4603799999999995e-05,0.0,0.0322581,998,0.998,248197120,20261117_md_synth_m5_n100k_q1000
+surf_1d_and,synth_uniform_q1000,1000,0.2894284521,0.285714,0.777778,17,0.017,33218266,20261117_surf_1d_and_synth_m5_n100k_q1000
+surf_1d_best,synth_uniform_q1000,1000,0.3151301734,0.3125,0.777778,15,0.015,6645571,20261117_surf_1d_best_synth_m5_n100k_q1000

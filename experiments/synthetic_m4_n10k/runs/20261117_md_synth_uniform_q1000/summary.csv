@@ -1,0 +1,2 @@
+method,workload,n_queries,avg_fpr,median_fpr,avg_filter_time_s,avg_process_time_s,filter_bytes,n_fpr_finite,n_fpr_eq_0,frac_fpr_eq_0,notes
+md,synth_uniform_q1000,1000,0.0008316234,0.0,0.0002631235083,0.004428908904,39206912,1000,979,0.979,baseline; bitsperkey=20; q1000

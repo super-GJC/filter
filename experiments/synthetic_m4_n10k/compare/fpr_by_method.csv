@@ -1,0 +1,7 @@
+method,workload,n_queries,avg_fpr,median_fpr,n_fpr_finite,n_fpr_eq_0,frac_fpr_eq_0,run_id
+md,synth_uniform_q100,100,0.0,0.0,100,100,1.0,20261116_md_synth_uniform_q100
+surf_1d_and,synth_uniform_q100,100,0.267576981,0.26748,100,4,0.04,20261116_surf_1d_and_synth_uniform_q100
+surf_1d_best,synth_uniform_q100,100,0.38277789,0.375,100,1,0.01,20261116_surf_1d_best_synth_uniform_q100
+md,synth_uniform_q1000,1000,0.0008316234,0.0,1000,979,0.979,20261117_md_synth_uniform_q1000
+surf_1d_and,synth_uniform_q1000,1000,0.2957418999,0.2947865,1000,24,0.024,20261117_surf_1d_and_synth_uniform_q1000
+surf_1d_best,synth_uniform_q1000,1000,0.4120370062,0.416026,1000,5,0.005,20261117_surf_1d_best_synth_uniform_q1000

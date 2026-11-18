@@ -1,0 +1,2 @@
+method,workload,n_queries,avg_fpr,median_fpr,avg_filter_time_s,avg_process_time_s,filter_bytes,n_fpr_finite,n_fpr_eq_0,frac_fpr_eq_0,notes
+surf_1d_and,synth_uniform_q1000,1000,0.2894284521,0.285714,0.000320443903,2.0025088e-05,33218266,1000,17,0.017,real_suffix=8

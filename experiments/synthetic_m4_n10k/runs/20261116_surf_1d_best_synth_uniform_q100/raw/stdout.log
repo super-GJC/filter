@@ -1,0 +1,14 @@
+[surf_adapter] m=4 chunknum=2048
+[surf_adapter] data=experiments/synthetic/datasets/synth_uniform_n10k/data.txt
+[surf_adapter] query=experiments/synthetic/workloads/synth_uniform_q100/query.txt
+[surf_adapter] out=/tmp/synth_surf_out
+[surf_adapter] tuples=10000 queries=100 workload=synth_uniform_q100
+[surf_adapter] nonempty_chunks=2029
+[surf_adapter] built_filters_on_chunks=2029 all_dims=1 real_suffix=8
+[surf_adapter] surf_1d_and queries 50/100
+[surf_adapter] surf_1d_and queries 100/100
+[surf_adapter] wrote /tmp/synth_surf_out/result_and.txt avg_fpr=0.267577 median_fpr=0.26748 filter_bytes=6555527
+[surf_adapter] surf_1d_best queries 50/100
+[surf_adapter] surf_1d_best queries 100/100
+[surf_adapter] wrote /tmp/synth_surf_out/result_best.txt avg_fpr=0.382778 median_fpr=0.375 filter_bytes=1645400
+[surf_adapter] done
