@@ -1,0 +1,7 @@
+nonempty_chunks 8192
+build_ok 6364
+build_fail 1828
+bpk 2
+filter_bytes 3105632
+avg_fpr 0.315292
+median_fpr 0.3125

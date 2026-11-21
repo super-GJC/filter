@@ -1,0 +1,3 @@
+method,workload,n_queries,avg_fpr,median_fpr,avg_filter_time_s,avg_process_time_s,filter_bytes,notes
+snarf_1d_and,synth_uniform_q1000,1000,0.315354,0.3125,4.96343e-05,1.41903e-05,4497950,bpk=10;batch=100;nan_fpr=0;NDEBUG_for_Ngt10000_assert
+snarf_1d_best,synth_uniform_q1000,1000,0.315388,0.3125,2.43398e-05,1.14719e-05,901019,bpk=10;batch=100;nan_fpr=0;NDEBUG_for_Ngt10000_assert;best_dim=auto

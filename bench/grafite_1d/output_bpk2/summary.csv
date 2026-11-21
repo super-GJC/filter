@@ -1,0 +1,2 @@
+method,workload,bpk,n_queries,avg_fpr,median_fpr,avg_filter_time_s,avg_process_time_s,filter_bytes,nonempty_chunks,build_ok,build_fail,build_success_rate,notes
+grafite_1d_best,synth_uniform_q1000,2,1000,0.31535,0.3125,1.42702e-05,1.08579e-05,3105632,8192,6364,1828,77.6855,fail_open_on_build_fail;best_dim=auto;nan_fpr=0
